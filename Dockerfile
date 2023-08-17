@@ -1,21 +1,31 @@
-FROM php:8.2-cli
+FROM php:8.2
 
 WORKDIR /opt
 
-RUN apt update
-RUN rm /etc/apt/preferences.d/no-debian-php
-RUN apt install php8.2-cli \
-    php8.2-common \
-    php8.2-curl \
-    php8.2-gd \
-    php8.2-zip \
-    php8.2-mbstring \
-    php8.2-mysql \
-    php8.2-opcache \
-    php8.2-readline \
-    php8.2-sqlite3 \
-    php8.2-xml  \
-    php8.2-apcu -y \
+RUN apt-get update \
+    && apt-get install -y \
+    libfreetype-dev \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    libzip-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    && apt-get clean -y
+
+RUN docker-php-ext-install gd
+RUN docker-php-ext-install zip
+RUN docker-php-ext-install mbstring
+RUN docker-php-ext-install mysqli pdo pdo_mysql
+RUN docker-php-ext-install opcache
+RUN docker-php-ext-install xml
+
+RUN docker-php-ext-enable gd
+RUN docker-php-ext-enable zip
+RUN docker-php-ext-enable mbstring
+RUN docker-php-ext-enable mysqli pdo pdo_mysql
+RUN docker-php-ext-enable opcache
+RUN docker-php-ext-enable xml
 
 RUN apt install wget -y
 RUN wget https://robo.li/robo.phar
