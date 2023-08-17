@@ -27,7 +27,9 @@ RUN docker-php-ext-enable mysqli pdo pdo_mysql
 RUN docker-php-ext-enable opcache
 RUN docker-php-ext-enable xml
 
-RUN apt install wget -y
+RUN apt-get install git -y
+
+RUN apt-get install wget -y
 RUN wget https://robo.li/robo.phar
 run chmod +x robo.phar && mv robo.phar /usr/bin/robo
 
