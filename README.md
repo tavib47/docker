@@ -3,7 +3,8 @@
 ```
 
 docker build -t drupal-php .
-docker tag commit_hash tavib47/drupal-php:tagname
+docker tag drupal-php tavib47/drupal-php:tagname
+docker login
 docker push tavib47/drupal-php:tagname
 
 ```
