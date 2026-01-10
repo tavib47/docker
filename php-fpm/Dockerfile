@@ -18,6 +18,8 @@ RUN apt-get update \
     libcurl4-openssl-dev \
     libzip-dev \
     libicu-dev \
+    libsqlite3-dev \
+    libreadline-dev \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,11 +38,14 @@ RUN docker-php-ext-install \
     xml \
     curl \
     intl \
-    exif
+    exif \
+    readline \
+    pdo_sqlite \
+    sqlite3
 
-# Install Redis extension via PECL
-RUN pecl install redis \
-    && docker-php-ext-enable redis
+# Install PECL extensions
+RUN pecl install apcu redis \
+    && docker-php-ext-enable apcu redis
 
 # Use production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
