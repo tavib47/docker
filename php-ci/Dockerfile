@@ -34,10 +34,9 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | b
     && . "$NVM_DIR/nvm.sh" \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
-    && nvm use default
-
-# Add NVM to path for non-interactive shells
-ENV PATH="$NVM_DIR/versions/node/v$NODE_VERSION/bin:$PATH"
+    && nvm use default \
+    && ln -s "$(which node)" /usr/local/bin/node \
+    && ln -s "$(which npm)" /usr/local/bin/npm
 
 # Verify installations
 RUN php --version && composer --version && git --version && node --version && npm --version
