@@ -28,12 +28,17 @@ Use the included build script:
 
 # Build only a specific image
 ./build.sh -v 8.4 -i php-ci
-./build.sh -v 8.4 -i php-fpm
+
+# Build and push to Docker Hub
+./build.sh -a --push
+./build.sh -v 8.4 -i php-fpm --push
 ```
+
+Note: Run `docker login` before using `--push`.
 
 ## CI/CD Pipeline
 
-This repository uses GitLab CI to automatically build and push images.
+This repository uses GitLab CI to build and push images with manual triggers.
 
 ### Required Variables
 
@@ -46,16 +51,18 @@ Set in GitLab **Settings > CI/CD > Variables**:
 
 ### Build Triggers
 
+Jobs are created automatically when relevant files change, but require manual start to conserve CI minutes:
+
 | Trigger | Behavior |
 |---------|----------|
-| Commit to main/master | Auto-builds images with changed Dockerfiles |
-| Manual trigger | Run jobs manually from GitLab UI |
+| Commit to main/master | Creates jobs (manual start required) |
+| Web UI | Run jobs manually from GitLab Pipelines |
 
-### Auto-detection
+### Change Detection
 
-- `php-ci/` changes → rebuilds php-ci and drupal-ci
-- `drupal-ci/` changes → rebuilds only drupal-ci
-- `php-fpm/` changes → rebuilds only php-fpm
+- `php-ci/` changes → creates php-ci and drupal-ci jobs
+- `drupal-ci/` changes → creates drupal-ci job
+- `php-fpm/` changes → creates php-fpm job
 
 ## License
 

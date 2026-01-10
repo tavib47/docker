@@ -19,7 +19,7 @@ variables:
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
 
 # =============================================================================
-# PHP-CI - Builds automatically when php-ci/ changes, or manually via web UI
+# PHP-CI - Builds when php-ci/ changes (manual trigger)
 # =============================================================================
 
 php-ci:
@@ -39,13 +39,14 @@ php-ci:
     # Manual trigger from web UI - always available
     - if: $CI_PIPELINE_SOURCE == "web"
       when: manual
-    # Auto trigger on default branch when php-ci/ changes
+    # Manual trigger on default branch when php-ci/ changes
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - php-ci/**/*
+      when: manual
 
 # =============================================================================
-# DRUPAL-CI - Builds automatically when php-ci/ or drupal-ci/ changes
+# DRUPAL-CI - Builds when php-ci/ or drupal-ci/ changes (manual trigger)
 # =============================================================================
 
 drupal-ci:
@@ -68,17 +69,19 @@ drupal-ci:
     # Manual trigger from web UI - always available
     - if: $CI_PIPELINE_SOURCE == "web"
       when: manual
-    # Auto trigger on default branch when php-ci/ changes (base image updated)
+    # Manual trigger on default branch when php-ci/ changes (base image updated)
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - php-ci/**/*
-    # Auto trigger on default branch when drupal-ci/ changes
+      when: manual
+    # Manual trigger on default branch when drupal-ci/ changes
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - drupal-ci/**/*
+      when: manual
 
 # =============================================================================
-# PHP-FPM - Production PHP-FPM image
+# PHP-FPM - Production PHP-FPM image (manual trigger)
 # =============================================================================
 
 php-fpm:
@@ -98,7 +101,8 @@ php-fpm:
     # Manual trigger from web UI - always available
     - if: $CI_PIPELINE_SOURCE == "web"
       when: manual
-    # Auto trigger on default branch when php-fpm/ changes
+    # Manual trigger on default branch when php-fpm/ changes
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
       changes:
         - php-fpm/**/*
+      when: manual

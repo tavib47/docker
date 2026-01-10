@@ -12,7 +12,7 @@ This repository contains Docker images for PHP/Drupal CI pipelines and productio
 │   └── Dockerfile
 ├── php-fpm/          # Production PHP-FPM image with common extensions
 │   └── Dockerfile
-├── build.sh          # Local build script for testing
+├── build.sh          # Build script (supports --push for Docker Hub)
 ├── .gitlab-ci.yml    # CI/CD pipeline configuration
 ├── README.md         # User documentation
 └── CLAUDE.md         # This file
@@ -37,13 +37,15 @@ Both images support multiple PHP versions via the `PHP_VERSION` build argument:
 Use `build.sh` for local builds:
 
 ```bash
-./build.sh                      # Build both images for PHP 8.4 (default)
+./build.sh                      # Build all images for PHP 8.4 (default)
 ./build.sh -v 8.3               # Build for specific PHP version
 ./build.sh -a                   # Build all supported versions
 ./build.sh -v 8.5 -i php-ci     # Build only php-ci for PHP 8.5
+./build.sh -a --push            # Build all versions and push to Docker Hub
+./build.sh -v 8.4 -i php-fpm -p # Build and push specific image/version
 ```
 
-The script handles build order automatically (php-ci before drupal-ci) and tags the highest version as `latest`.
+The script handles build order automatically (php-ci before drupal-ci) and tags the highest version as `latest`. Use `--push` or `-p` to push images to Docker Hub after building (requires `docker login`).
 
 ## Build Order
 
@@ -57,9 +59,9 @@ docker build --build-arg PHP_VERSION=8.2 -t tavib47/drupal-ci:8.2 ./drupal-ci
 
 ## GitLab CI/CD
 
-The `.gitlab-ci.yml` handles automated builds:
+The `.gitlab-ci.yml` handles builds with manual triggers (to conserve CI minutes):
 - Builds all PHP versions defined in `PHP_VERSIONS` variable
-- Auto-triggers on changes to `php-ci/`, `drupal-ci/`, or `php-fpm/` directories
+- Creates jobs on changes to `php-ci/`, `drupal-ci/`, or `php-fpm/` directories (manual start required)
 - Tags the highest version (sorted with `sort -V`) as `latest`
 - Requires `DOCKER_USERNAME` and `DOCKER_PASSWORD` CI variables
 
