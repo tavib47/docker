@@ -65,6 +65,29 @@ build_image() {
     echo -e "${GREEN}Successfully built ${tag}${NC}"
 }
 
+check_docker_login() {
+    echo -e "${YELLOW}Checking Docker Hub login status...${NC}"
+
+    # Try to get the logged-in username
+    if docker info 2>/dev/null | grep -q "Username:"; then
+        local username=$(docker info 2>/dev/null | grep "Username:" | awk '{print $2}')
+        echo -e "${GREEN}Logged in to Docker Hub as: ${username}${NC}"
+        return 0
+    fi
+
+    # Not logged in - prompt for login
+    echo -e "${RED}Not logged in to Docker Hub.${NC}"
+    echo -e "${YELLOW}Please log in to continue with push:${NC}"
+
+    if docker login; then
+        echo -e "${GREEN}Successfully logged in to Docker Hub.${NC}"
+        return 0
+    else
+        echo -e "${RED}Docker login failed. Cannot push images.${NC}"
+        exit 1
+    fi
+}
+
 push_image() {
     local image=$1
     local version=$2
@@ -163,6 +186,11 @@ if [[ -n "$PHP_VERSION" ]]; then
         echo "Supported versions: ${SUPPORTED_VERSIONS[*]}"
         exit 1
     fi
+fi
+
+# Check Docker login if pushing
+if [[ "$DO_PUSH" == true ]]; then
+    check_docker_login
 fi
 
 # Build images
