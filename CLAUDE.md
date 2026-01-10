@@ -10,6 +10,8 @@ This repository contains Docker images for PHP/Drupal CI pipelines with multi-ve
 │   └── Dockerfile
 ├── drupal-ci/        # Drupal-specific image extending php-ci
 │   └── Dockerfile
+├── build.sh          # Local build script for testing
+├── .gitlab-ci.yml    # CI/CD pipeline configuration
 ├── README.md         # User documentation
 └── CLAUDE.md         # This file
 ```
@@ -22,10 +24,23 @@ This repository contains Docker images for PHP/Drupal CI pipelines with multi-ve
 ## PHP Version Support
 
 Both images support multiple PHP versions via the `PHP_VERSION` build argument:
-- Supported versions: 8.1, 8.2, 8.3, 8.4
-- Default version: 8.3
+- Supported versions: 8.1, 8.2, 8.3, 8.4, 8.5
+- Default build version: 8.4 (in build.sh)
 - Tag convention: `tavib47/<image>:<php-version>` (e.g., `tavib47/php-ci:8.2`)
-- `latest` tag points to PHP 8.3
+- `latest` tag points to the highest PHP version (currently 8.5)
+
+## Building Locally
+
+Use `build.sh` for local builds:
+
+```bash
+./build.sh                      # Build both images for PHP 8.4 (default)
+./build.sh -v 8.3               # Build for specific PHP version
+./build.sh -a                   # Build all supported versions
+./build.sh -v 8.5 -i php-ci     # Build only php-ci for PHP 8.5
+```
+
+The script handles build order automatically (php-ci before drupal-ci) and tags the highest version as `latest`.
 
 ## Build Order
 
@@ -37,13 +52,21 @@ docker build --build-arg PHP_VERSION=8.2 -t tavib47/php-ci:8.2 ./php-ci
 docker build --build-arg PHP_VERSION=8.2 -t tavib47/drupal-ci:8.2 ./drupal-ci
 ```
 
+## GitLab CI/CD
+
+The `.gitlab-ci.yml` handles automated builds:
+- Builds all PHP versions defined in `PHP_VERSIONS` variable
+- Auto-triggers on changes to `php-ci/` or `drupal-ci/` directories
+- Tags the highest version (sorted with `sort -V`) as `latest`
+- Requires `DOCKER_USERNAME` and `DOCKER_PASSWORD` CI variables
+
 ## Key Conventions
 
 - All images are based on `php:<version>-fpm` (official PHP FPM images)
 - NVM is used for Node.js version management (default: Node 20)
 - Composer is installed from the official image
 - PHP extensions are installed using `docker-php-ext-install`
-- Image tags match PHP versions (8.1, 8.2, 8.3, 8.4, latest)
+- Image tags match PHP versions (8.1, 8.2, 8.3, 8.4, 8.5, latest)
 
 ## Build Arguments
 
@@ -65,11 +88,15 @@ docker build --build-arg PHP_VERSION=8.2 -t tavib47/drupal-ci:8.2 ./drupal-ci
 3. Include `ARG PHP_VERSION=8.3` for version support
 4. Consider if it should extend an existing image (like php-ci)
 5. Update README.md with build and push instructions
-6. Follow the naming convention: `tavib47/<image-name>:<php-version>`
+6. Add build job to `.gitlab-ci.yml`
+7. Follow the naming convention: `tavib47/<image-name>:<php-version>`
 
 ## When Adding New PHP Versions
 
 1. Test that the base `php:<version>-fpm` image exists on Docker Hub
 2. Build and test both images with the new version
-3. Update the version list in README.md
+3. Update the following files:
+   - `build.sh`: Add to `SUPPORTED_VERSIONS` array, update `LATEST_VERSION` if needed
+   - `.gitlab-ci.yml`: Add to `PHP_VERSIONS` variable
+   - `README.md`: Update version list
 4. Consider if new PHP version requires extension changes

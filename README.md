@@ -15,18 +15,30 @@ All images support PHP versions: `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest`
 
 ## Building Locally
 
+Use the included build script:
+
+```bash
+# Build both images for PHP 8.4 (default)
+./build.sh
+
+# Build for a specific PHP version
+./build.sh -v 8.3
+
+# Build all supported PHP versions
+./build.sh -a
+
+# Build only a specific image
+./build.sh -v 8.4 -i php-ci
+```
+
+Or build manually:
+
 ```bash
 # Build php-ci (required first)
 docker build --build-arg PHP_VERSION=8.5 -t tavib47/php-ci:8.5 ./php-ci
 
 # Build drupal-ci
 docker build --build-arg PHP_VERSION=8.5 -t tavib47/drupal-ci:8.5 ./drupal-ci
-
-# Build all versions
-for version in 8.1 8.2 8.3 8.4 8.5; do
-  docker build --build-arg PHP_VERSION=$version -t tavib47/php-ci:$version ./php-ci
-  docker build --build-arg PHP_VERSION=$version -t tavib47/drupal-ci:$version ./drupal-ci
-done
 ```
 
 ## Using in CI/CD
