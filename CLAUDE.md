@@ -1,6 +1,6 @@
 # Claude Code Instructions
 
-This repository contains Docker images for PHP/Drupal CI pipelines with multi-version support.
+This repository contains Docker images for PHP/Drupal CI pipelines and production with multi-version support.
 
 ## Repository Structure
 
@@ -9,6 +9,8 @@ This repository contains Docker images for PHP/Drupal CI pipelines with multi-ve
 ├── php-ci/           # Base PHP image with Composer, Git, NVM/Node.js
 │   └── Dockerfile
 ├── drupal-ci/        # Drupal-specific image extending php-ci
+│   └── Dockerfile
+├── php-fpm/          # Production PHP-FPM image with common extensions
 │   └── Dockerfile
 ├── build.sh          # Local build script for testing
 ├── .gitlab-ci.yml    # CI/CD pipeline configuration
@@ -20,6 +22,7 @@ This repository contains Docker images for PHP/Drupal CI pipelines with multi-ve
 
 - `php-ci` is the base image containing PHP, Composer, Git, and NVM/Node.js
 - `drupal-ci` extends `php-ci` and adds Drupal-specific PHP extensions and tools (Robo, Drush)
+- `php-fpm` is a standalone production image with PHP-FPM and common extensions (works with external web server)
 
 ## PHP Version Support
 
@@ -56,7 +59,7 @@ docker build --build-arg PHP_VERSION=8.2 -t tavib47/drupal-ci:8.2 ./drupal-ci
 
 The `.gitlab-ci.yml` handles automated builds:
 - Builds all PHP versions defined in `PHP_VERSIONS` variable
-- Auto-triggers on changes to `php-ci/` or `drupal-ci/` directories
+- Auto-triggers on changes to `php-ci/`, `drupal-ci/`, or `php-fpm/` directories
 - Tags the highest version (sorted with `sort -V`) as `latest`
 - Requires `DOCKER_USERNAME` and `DOCKER_PASSWORD` CI variables
 
@@ -80,6 +83,11 @@ The `.gitlab-ci.yml` handles automated builds:
 |-----|---------|-------------|
 | `PHP_VERSION` | 8.3 | PHP version to use |
 | `PHP_CI_IMAGE` | tavib47/php-ci:${PHP_VERSION} | Base image to extend |
+
+### php-fpm
+| ARG | Default | Description |
+|-----|---------|-------------|
+| `PHP_VERSION` | 8.4 | PHP version to use |
 
 ## When Adding New Images
 

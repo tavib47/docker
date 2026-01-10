@@ -1,6 +1,6 @@
 # Docker Images
 
-A collection of Docker images for CI/CD pipelines.
+A collection of Docker images for CI/CD pipelines and production.
 
 ## Available Images
 
@@ -8,17 +8,16 @@ A collection of Docker images for CI/CD pipelines.
 |-------|-------------|:-:|
 | [php-ci](./php-ci) | Base PHP image with Composer, Git, and NVM/Node.js | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-php--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/php-ci) |
 | [drupal-ci](./drupal-ci) | Drupal image extending php-ci with PHP extensions, Robo, and Drush | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-drupal--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/drupal-ci) |
+| [php-fpm](./php-fpm) | Production PHP-FPM image with common extensions | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-php--fpm-blue?logo=docker)](https://hub.docker.com/r/tavib47/php-fpm) |
 
-All images support PHP versions: `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest`
-
-`latest` points to the highest PHP version.
+All images support PHP versions: `8.1`, `8.2`, `8.3`, `8.4`, `8.5 (latest)`
 
 ## Building Locally
 
 Use the included build script:
 
 ```bash
-# Build both images for PHP 8.4 (default)
+# Build all images for PHP 8.4 (default)
 ./build.sh
 
 # Build for a specific PHP version
@@ -29,71 +28,7 @@ Use the included build script:
 
 # Build only a specific image
 ./build.sh -v 8.4 -i php-ci
-```
-
-Or build manually:
-
-```bash
-# Build php-ci (required first)
-docker build --build-arg PHP_VERSION=8.5 -t tavib47/php-ci:8.5 ./php-ci
-
-# Build drupal-ci
-docker build --build-arg PHP_VERSION=8.5 -t tavib47/drupal-ci:8.5 ./drupal-ci
-```
-
-## Using in CI/CD
-
-### GitLab CI
-
-```yaml
-image: tavib47/drupal-ci:8.5
-
-build:
-  script:
-    - composer install
-    - npm install
-    - npm run build
-```
-
-### GitHub Actions
-
-```yaml
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    container:
-      image: tavib47/drupal-ci:8.5
-    steps:
-      - uses: actions/checkout@v4
-      - run: composer install
-```
-
-### Multi-version Testing
-
-```yaml
-# GitLab CI
-.test:
-  script:
-    - composer install
-    - ./vendor/bin/phpunit
-
-test:8.3:
-  extends: .test
-  image: tavib47/drupal-ci:8.3
-
-test:8.5:
-  extends: .test
-  image: tavib47/drupal-ci:8.5
-```
-
-## Customizing Node.js Version
-
-Images use NVM, allowing runtime version switching:
-
-```bash
-source $NVM_DIR/nvm.sh
-nvm install 18
-nvm use 18
+./build.sh -v 8.4 -i php-fpm
 ```
 
 ## CI/CD Pipeline
@@ -120,6 +55,7 @@ Set in GitLab **Settings > CI/CD > Variables**:
 
 - `php-ci/` changes → rebuilds php-ci and drupal-ci
 - `drupal-ci/` changes → rebuilds only drupal-ci
+- `php-fpm/` changes → rebuilds only php-fpm
 
 ## License
 

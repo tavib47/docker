@@ -17,19 +17,20 @@ NC='\033[0m' # No Color
 usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "Build Docker images for PHP/Drupal CI pipelines."
+    echo "Build Docker images for PHP/Drupal CI pipelines and production."
     echo ""
     echo "Options:"
     echo "  -v, --version VERSION   Build for specific PHP version (${SUPPORTED_VERSIONS[*]})"
     echo "  -a, --all               Build for all supported PHP versions"
-    echo "  -i, --image IMAGE       Build only specific image (php-ci or drupal-ci)"
+    echo "  -i, --image IMAGE       Build only specific image (php-ci, drupal-ci, or php-fpm)"
     echo "  -h, --help              Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0                      Build both images for PHP $DEFAULT_PHP_VERSION"
-    echo "  $0 -v 8.2               Build both images for PHP 8.2"
-    echo "  $0 -a                   Build both images for all PHP versions"
+    echo "  $0                      Build all images for PHP $DEFAULT_PHP_VERSION"
+    echo "  $0 -v 8.2               Build all images for PHP 8.2"
+    echo "  $0 -a                   Build all images for all PHP versions"
     echo "  $0 -v 8.4 -i php-ci     Build only php-ci for PHP 8.4"
+    echo "  $0 -v 8.4 -i php-fpm    Build only php-fpm for PHP 8.4"
 }
 
 build_image() {
@@ -75,6 +76,10 @@ build_for_version() {
     if [[ -z "$image" || "$image" == "drupal-ci" ]]; then
         build_image "drupal-ci" "$version"
     fi
+
+    if [[ -z "$image" || "$image" == "php-fpm" ]]; then
+        build_image "php-fpm" "$version"
+    fi
 }
 
 # Parse arguments
@@ -109,9 +114,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate image name if specified
-if [[ -n "$TARGET_IMAGE" && "$TARGET_IMAGE" != "php-ci" && "$TARGET_IMAGE" != "drupal-ci" ]]; then
+if [[ -n "$TARGET_IMAGE" && "$TARGET_IMAGE" != "php-ci" && "$TARGET_IMAGE" != "drupal-ci" && "$TARGET_IMAGE" != "php-fpm" ]]; then
     echo -e "${RED}Invalid image name: $TARGET_IMAGE${NC}"
-    echo "Valid images: php-ci, drupal-ci"
+    echo "Valid images: php-ci, drupal-ci, php-fpm"
     exit 1
 fi
 
