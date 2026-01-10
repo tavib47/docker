@@ -1,0 +1,114 @@
+stages:
+  - build-base
+  - build-extended
+
+variables:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_NAMESPACE: tavib47
+  PHP_VERSIONS: "8.1 8.2 8.3 8.4 8.5"
+
+# Use Docker-in-Docker
+.docker-base:
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+  before_script:
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
+# =============================================================================
+# MANUAL BUILDS - Build specific images on demand from GitLab UI
+# =============================================================================
+
+manual:php-ci:
+  extends: .docker-base
+  stage: build-base
+  script:
+    - |
+      for version in ${PHP_VERSIONS}; do
+        echo "Building php-ci:${version}"
+        docker build --build-arg PHP_VERSION=${version} -t ${DOCKER_NAMESPACE}/php-ci:${version} ./php-ci
+        docker push ${DOCKER_NAMESPACE}/php-ci:${version}
+      done
+    - LATEST_VERSION=$(echo ${PHP_VERSIONS} | tr ' ' '\n' | sort -V | tail -1)
+    - docker tag ${DOCKER_NAMESPACE}/php-ci:${LATEST_VERSION} ${DOCKER_NAMESPACE}/php-ci:latest
+    - docker push ${DOCKER_NAMESPACE}/php-ci:latest
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - changes:
+        - php-ci/**/*
+      when: manual
+
+manual:drupal-ci:
+  extends: .docker-base
+  stage: build-extended
+  script:
+    - |
+      for version in ${PHP_VERSIONS}; do
+        echo "Building drupal-ci:${version}"
+        docker build --build-arg PHP_VERSION=${version} -t ${DOCKER_NAMESPACE}/drupal-ci:${version} ./drupal-ci
+        docker push ${DOCKER_NAMESPACE}/drupal-ci:${version}
+      done
+    - LATEST_VERSION=$(echo ${PHP_VERSIONS} | tr ' ' '\n' | sort -V | tail -1)
+    - docker tag ${DOCKER_NAMESPACE}/drupal-ci:${LATEST_VERSION} ${DOCKER_NAMESPACE}/drupal-ci:latest
+    - docker push ${DOCKER_NAMESPACE}/drupal-ci:latest
+  needs:
+    - job: manual:php-ci
+      optional: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - changes:
+        - php-ci/**/*
+      when: manual
+    - changes:
+        - drupal-ci/**/*
+      when: manual
+
+# =============================================================================
+# AUTO BUILDS - Build modified images on commits to main/master
+# =============================================================================
+
+auto:php-ci:
+  extends: .docker-base
+  stage: build-base
+  script:
+    - |
+      for version in ${PHP_VERSIONS}; do
+        echo "Building php-ci:${version}"
+        docker build --build-arg PHP_VERSION=${version} -t ${DOCKER_NAMESPACE}/php-ci:${version} ./php-ci
+        docker push ${DOCKER_NAMESPACE}/php-ci:${version}
+      done
+    - LATEST_VERSION=$(echo ${PHP_VERSIONS} | tr ' ' '\n' | sort -V | tail -1)
+    - docker tag ${DOCKER_NAMESPACE}/php-ci:${LATEST_VERSION} ${DOCKER_NAMESPACE}/php-ci:latest
+    - docker push ${DOCKER_NAMESPACE}/php-ci:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - php-ci/**/*
+
+auto:drupal-ci:
+  extends: .docker-base
+  stage: build-extended
+  script:
+    - |
+      for version in ${PHP_VERSIONS}; do
+        echo "Building drupal-ci:${version}"
+        docker build --build-arg PHP_VERSION=${version} -t ${DOCKER_NAMESPACE}/drupal-ci:${version} ./drupal-ci
+        docker push ${DOCKER_NAMESPACE}/drupal-ci:${version}
+      done
+    - LATEST_VERSION=$(echo ${PHP_VERSIONS} | tr ' ' '\n' | sort -V | tail -1)
+    - docker tag ${DOCKER_NAMESPACE}/drupal-ci:${LATEST_VERSION} ${DOCKER_NAMESPACE}/drupal-ci:latest
+    - docker push ${DOCKER_NAMESPACE}/drupal-ci:latest
+  needs:
+    - job: auto:php-ci
+      optional: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - php-ci/**/*
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - drupal-ci/**/*

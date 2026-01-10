@@ -172,10 +172,45 @@ node --version  # v18.x.x
 
 | Image | Tags |
 |-------|------|
-| php-ci | `8.1`, `8.2`, `8.3`, `8.4`, `latest` |
-| drupal-ci | `8.1`, `8.2`, `8.3`, `8.4`, `latest` |
+| php-ci | `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest` |
+| drupal-ci | `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest` |
 
-`latest` points to PHP 8.3.
+`latest` points to the highest PHP version (currently 8.5).
+
+## CI/CD Pipeline
+
+This repository includes a GitLab CI configuration (`.gitlab-ci.yml`) that automates building and pushing images.
+
+### Required CI/CD Variables
+
+Set these variables in GitLab CI/CD settings (Settings > CI/CD > Variables):
+
+| Variable | Description |
+|----------|-------------|
+| `DOCKER_USERNAME` | Docker Hub username |
+| `DOCKER_PASSWORD` | Docker Hub password or access token |
+
+### Build Triggers
+
+| Trigger | Behavior |
+|---------|----------|
+| **Commit to main/master** | Auto-builds only images with changed Dockerfiles |
+| **Manual trigger** | Run specific jobs manually from GitLab UI |
+
+### Auto Builds
+
+When you push to the default branch (main/master), the pipeline automatically detects which Dockerfiles changed:
+
+- If `php-ci/` changes → rebuilds php-ci and drupal-ci (all PHP versions)
+- If `drupal-ci/` changes → rebuilds only drupal-ci (all PHP versions)
+- If neither changes → no builds triggered
+
+### Manual Builds
+
+You can trigger builds manually from GitLab:
+1. Go to CI/CD > Pipelines
+2. Click "Run pipeline"
+3. Click the play button on `manual:php-ci` or `manual:drupal-ci`
 
 ## License
 
