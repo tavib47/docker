@@ -27,21 +27,15 @@ RUN apt-get update \
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
 # Install PHP extensions
+# Note: curl, mbstring, opcache, pdo_sqlite, readline, sqlite3, xml are already in the base image
 RUN docker-php-ext-install \
     pdo_mysql \
     mysqli \
     gd \
     zip \
     bcmath \
-    opcache \
-    mbstring \
-    xml \
-    curl \
     intl \
-    exif \
-    readline \
-    pdo_sqlite \
-    sqlite3
+    exif
 
 # Install PECL extensions
 RUN pecl install apcu redis \
