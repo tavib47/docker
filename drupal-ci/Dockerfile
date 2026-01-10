@@ -21,28 +21,19 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions required by Drupal
+# Note: curl, mbstring, opcache, pdo, xml are already in the base image
 RUN docker-php-ext-install \
     mysqli \
-    pdo \
     pdo_mysql \
     bcmath \
-    curl \
-    gd \
-    mbstring \
-    opcache \
-    xml
+    gd
 
 # Enable PHP extensions
 RUN docker-php-ext-enable \
     mysqli \
-    pdo \
     pdo_mysql \
     bcmath \
-    curl \
-    gd \
-    mbstring \
-    opcache \
-    xml
+    gd
 
 # Install Robo task runner
 RUN wget https://robo.li/robo.phar \
