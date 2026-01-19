@@ -20,6 +20,8 @@ RUN apt-get update \
     libicu-dev \
     libsqlite3-dev \
     libreadline-dev \
+    libfcgi-bin \
+    curl \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
 
@@ -44,7 +46,19 @@ RUN pecl install apcu redis \
 # Use production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
+# Install php-fpm-healthcheck script
+RUN curl -fsSL https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck \
+    -o /usr/local/bin/php-fpm-healthcheck \
+    && chmod +x /usr/local/bin/php-fpm-healthcheck
+
+# Enable PHP-FPM status page and ping for healthcheck
+RUN echo "pm.status_path = /status" >> /usr/local/etc/php-fpm.d/zz-docker.conf \
+    && echo "ping.path = /ping" >> /usr/local/etc/php-fpm.d/zz-docker.conf
+
 # Expose PHP-FPM port
 EXPOSE 9000
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD php-fpm-healthcheck || exit 1
 
 CMD ["php-fpm"]
