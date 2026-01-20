@@ -18,9 +18,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Update Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-          repository: tavib47/${{ matrix.image }}
+          repository: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.image }}
           readme-filepath: ./${{ matrix.image }}/README.md
