@@ -1,5 +1,7 @@
 ARG PHP_VERSION=8.3
-FROM php:${PHP_VERSION}-fpm
+FROM php:${PHP_VERSION}-fpm-alpine
+
+ARG PHP_VERSION
 
 LABEL maintainer="tavib47"
 LABEL description="PHP CI base image with Composer, Git, and NVM/Node.js"
@@ -12,16 +14,14 @@ ENV NODE_VERSION=20
 WORKDIR /opt
 
 # Install base dependencies
-RUN apt-get update \
-    && apt-get install -y \
+RUN apk add --no-cache \
     curl \
     wget \
     git \
     zip \
     unzip \
     libzip-dev \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+    bash
 
 # Install zip PHP extension (commonly needed for composer)
 RUN docker-php-ext-install zip

@@ -1,5 +1,7 @@
 ARG PHP_VERSION=8.4
-FROM php:${PHP_VERSION}-fpm
+FROM php:${PHP_VERSION}-fpm-alpine
+
+ARG PHP_VERSION
 
 LABEL maintainer="tavib47"
 LABEL description="Production PHP-FPM image with common extensions"
@@ -8,22 +10,19 @@ LABEL php.version="${PHP_VERSION}"
 WORKDIR /var/www/html
 
 # Install system dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    libfreetype-dev \
-    libjpeg62-turbo-dev \
+RUN apk add --no-cache \
+    freetype-dev \
+    libjpeg-turbo-dev \
     libpng-dev \
-    libonig-dev \
+    oniguruma-dev \
     libxml2-dev \
-    libcurl4-openssl-dev \
+    curl-dev \
     libzip-dev \
-    libicu-dev \
-    libsqlite3-dev \
-    libreadline-dev \
-    libfcgi-bin \
-    curl \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+    icu-dev \
+    sqlite-dev \
+    readline-dev \
+    fcgi \
+    curl
 
 # Configure GD extension
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg

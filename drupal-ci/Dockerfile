@@ -2,6 +2,8 @@ ARG PHP_VERSION=8.3
 ARG PHP_CI_IMAGE=tavib47/php-ci:${PHP_VERSION}
 FROM ${PHP_CI_IMAGE}
 
+ARG PHP_VERSION
+
 LABEL maintainer="tavib47"
 LABEL description="Drupal CI image with all necessary PHP extensions and tools"
 LABEL php.version="${PHP_VERSION}"
@@ -9,27 +11,20 @@ LABEL php.version="${PHP_VERSION}"
 WORKDIR /opt
 
 # Install Drupal-required PHP extension dependencies
-RUN apt-get update \
-    && apt-get install -y \
-    libfreetype-dev \
-    libjpeg62-turbo-dev \
+RUN apk add --no-cache \
+    freetype-dev \
+    libjpeg-turbo-dev \
     libpng-dev \
-    libonig-dev \
+    oniguruma-dev \
     libxml2-dev \
-    libcurl4-openssl-dev \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
+    curl-dev
+
+# Configure GD extension
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
 # Install PHP extensions required by Drupal
 # Note: curl, mbstring, opcache, pdo, xml are already in the base image
 RUN docker-php-ext-install \
-    mysqli \
-    pdo_mysql \
-    bcmath \
-    gd
-
-# Enable PHP extensions
-RUN docker-php-ext-enable \
     mysqli \
     pdo_mysql \
     bcmath \
