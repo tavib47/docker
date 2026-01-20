@@ -93,6 +93,13 @@ build_image() {
             "./${image}"
     fi
 
+    # For default Node version, also tag with explicit node version (e.g., 8.4 and 8.4-node22)
+    if [[ "$image" != "php-fpm" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
+        local explicit_node_tag="${IMAGE_PREFIX}/${image}:${php_version}-node${DEFAULT_NODE_VERSION}"
+        echo -e "${YELLOW}Tagging ${tag} as ${explicit_node_tag}${NC}"
+        docker tag "$tag" "$explicit_node_tag"
+    fi
+
     # Tag as latest if this is the latest PHP version and default Node version
     if [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local latest_tag="${IMAGE_PREFIX}/${image}:latest"
@@ -134,6 +141,13 @@ push_image() {
 
     echo -e "${BLUE}Pushing ${tag}...${NC}"
     docker push "$tag"
+
+    # Push explicit node tag for default Node version (e.g., 8.4-node22)
+    if [[ "$image" != "php-fpm" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
+        local explicit_node_tag="${IMAGE_PREFIX}/${image}:${php_version}-node${DEFAULT_NODE_VERSION}"
+        echo -e "${BLUE}Pushing ${explicit_node_tag}...${NC}"
+        docker push "$explicit_node_tag"
+    fi
 
     # Push latest tag if this is the latest PHP version and default Node version
     if [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
