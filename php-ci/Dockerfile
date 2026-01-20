@@ -1,15 +1,15 @@
-ARG PHP_VERSION=8.3
+ARG PHP_VERSION=8.4
+ARG NODE_VERSION=20
+FROM node:${NODE_VERSION}-alpine AS node
 FROM php:${PHP_VERSION}-fpm-alpine
 
 ARG PHP_VERSION
+ARG NODE_VERSION
 
 LABEL maintainer="tavib47"
-LABEL description="PHP CI base image with Composer, Git, and NVM/Node.js"
+LABEL description="PHP CI base image with Composer, Git, and Node.js"
 LABEL php.version="${PHP_VERSION}"
-
-# Set environment variables for NVM
-ENV NVM_DIR=/root/.nvm
-ENV NODE_VERSION=20
+LABEL node.version="${NODE_VERSION}"
 
 WORKDIR /opt
 
@@ -23,20 +23,17 @@ RUN apk add --no-cache \
     libzip-dev \
     bash
 
+# Copy Node.js from official image
+COPY --from=node /usr/local/bin/node /usr/local/bin/
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
 # Install zip PHP extension (commonly needed for composer)
 RUN docker-php-ext-install zip
 
 # Install Composer
 COPY --from=composer/composer:latest-bin /composer /usr/bin/composer
-
-# Install NVM and Node.js
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash \
-    && . "$NVM_DIR/nvm.sh" \
-    && nvm install $NODE_VERSION \
-    && nvm alias default $NODE_VERSION \
-    && nvm use default \
-    && ln -s "$(which node)" /usr/local/bin/node \
-    && ln -s "$(which npm)" /usr/local/bin/npm
 
 # Verify installations
 RUN php --version && composer --version && git --version && node --version && npm --version
