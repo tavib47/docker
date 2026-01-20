@@ -1,17 +1,14 @@
-# php-fpm
+# PHP-FPM Production Image
 
-[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-php--fpm-blue?logo=docker)](https://hub.docker.com/r/tavib47/php-fpm)
+[![Docker Hub](https://img.shields.io/docker/pulls/tavib47/php-fpm?label=pulls&logo=docker)](https://hub.docker.com/r/tavib47/php-fpm)
+[![Image Size](https://img.shields.io/docker/image-size/tavib47/php-fpm/latest?logo=docker)](https://hub.docker.com/r/tavib47/php-fpm)
 
-Alpine-based production PHP-FPM image with common extensions. Designed to work with an external web server (nginx, Apache, Caddy, etc.).
+An Alpine-based production PHP-FPM image with common extensions and built-in healthcheck. Designed to work with an external web server (nginx, Apache, Caddy).
 
-## Tags
+## Features
 
-- `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest`
-
-## What's Included
-
-- PHP-FPM with production configuration (`php.ini-production`)
-- Built-in healthcheck via php-fpm-healthcheck
+- PHP-FPM with production configuration
+- Built-in healthcheck via [php-fpm-healthcheck](https://github.com/renatomefi/php-fpm-healthcheck)
 - Common PHP extensions for web applications
 
 ### PHP Extensions
@@ -27,51 +24,24 @@ Alpine-based production PHP-FPM image with common extensions. Designed to work w
 | `apcu` | Opcode caching |
 | `redis` | Redis client |
 
-### Pre-installed in base image
-`curl`, `mbstring`, `opcache`, `pdo_sqlite`, `readline`, `sqlite3`, `xml`
+**Pre-installed in base image:** `curl`, `mbstring`, `opcache`, `pdo_sqlite`, `readline`, `sqlite3`, `xml`
+
+## Supported Tags
+
+- `8.5`, `latest`
+- `8.4`
+- `8.3`
+- `8.2`
+- `8.1`
 
 ## Quick Start
 
 ```bash
+docker pull tavib47/php-fpm:8.4
 docker run -d -p 9000:9000 -v /path/to/app:/var/www/html tavib47/php-fpm:8.4
 ```
 
 Then configure your web server to proxy PHP requests to `localhost:9000`.
-
-## Healthcheck
-
-The image includes a built-in healthcheck using [php-fpm-healthcheck](https://github.com/renatomefi/php-fpm-healthcheck):
-
-```bash
-# Check health manually
-docker exec <container> php-fpm-healthcheck
-
-# Status endpoints (for custom checks)
-# /status - PHP-FPM status page
-# /ping   - Simple ping endpoint
-```
-
-## Nginx Configuration Example
-
-```nginx
-server {
-    listen 80;
-    server_name example.com;
-    root /var/www/html/public;
-    index index.php index.html;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        fastcgi_pass 127.0.0.1:9000;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-}
-```
 
 ## Docker Compose Example
 
@@ -101,7 +71,42 @@ services:
         condition: service_healthy
 ```
 
-## Building a Custom Image
+## Nginx Configuration Example
+
+```nginx
+server {
+    listen 80;
+    server_name example.com;
+    root /var/www/html/public;
+    index index.php index.html;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass php:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+## Healthcheck
+
+The image includes a built-in healthcheck:
+
+```bash
+# Check health manually
+docker exec <container> php-fpm-healthcheck
+
+# Available endpoints
+# /status - PHP-FPM status page
+# /ping   - Simple ping endpoint
+```
+
+## Extending the Image
 
 ```dockerfile
 FROM tavib47/php-fpm:8.4
@@ -112,27 +117,14 @@ RUN apk add --no-cache libpq-dev \
 
 # Copy application code
 COPY . /var/www/html
-
-# Set ownership
 RUN chown -R www-data:www-data /var/www/html
 ```
 
-## Building Locally
+## Related Images
 
-```bash
-# Using build script
-./build.sh -v 8.4 -i php-fpm
+- [tavib47/php-ci](https://hub.docker.com/r/tavib47/php-ci) — CI/CD image with Composer, Git, and Node.js
+- [tavib47/drupal-ci](https://hub.docker.com/r/tavib47/drupal-ci) — Drupal CI/CD image with Drush and Robo
 
-# Or manually
-docker build --build-arg PHP_VERSION=8.4 -t tavib47/php-fpm:8.4 ./php-fpm
-```
+## Source
 
-## Build Arguments
-
-| ARG | Default | Description |
-|-----|---------|-------------|
-| `PHP_VERSION` | 8.4 | PHP version (8.1, 8.2, 8.3, 8.4, 8.5) |
-
-## Base Image
-
-Built on `php:<version>-fpm-alpine`.
+[GitHub Repository](https://github.com/tavib47/docker)

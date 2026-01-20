@@ -1,39 +1,59 @@
-# php-ci
+# PHP CI Base Image
 
-[![Docker Hub](https://img.shields.io/badge/Docker%20Hub-php--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/php-ci)
+[![Docker Hub](https://img.shields.io/docker/pulls/tavib47/php-ci?label=pulls&logo=docker)](https://hub.docker.com/r/tavib47/php-ci)
+[![Image Size](https://img.shields.io/docker/image-size/tavib47/php-ci/latest?logo=docker)](https://hub.docker.com/r/tavib47/php-ci)
 
-Alpine-based PHP image for CI/CD pipelines with Composer, Git, and Node.js.
+A lightweight Alpine-based PHP image optimized for CI/CD pipelines, bundling PHP with Composer, Git, and Node.js.
 
-## Tags
+## Features
 
-### PHP + Node.js (default)
-- `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest` — with Node.js 22
-
-### PHP + Specific Node.js Version
-- `8.4-node18`, `8.4-node20` — PHP 8.4 with Node.js 18/20
-- `8.3-node18`, `8.3-node20` — PHP 8.3 with Node.js 18/20
-- *(same pattern for other PHP versions)*
-
-## What's Included
-
-- PHP (with zip extension)
+- PHP with zip extension
 - Composer (latest)
 - Git
-- Node.js (18, 20, or 22 depending on tag)
-- npm and npx
+- Node.js with npm and npx
+- curl, wget, zip, unzip
+
+## Supported Tags
+
+| Tag | PHP | Node.js |
+|-----|-----|---------|
+| `8.5`, `latest` | 8.5 | 22 |
+| `8.4` | 8.4 | 22 |
+| `8.3` | 8.3 | 22 |
+| `8.2` | 8.2 | 22 |
+| `8.1` | 8.1 | 22 |
+| `<php>-node20` | 8.1-8.5 | 20 |
+| `<php>-node18` | 8.1-8.5 | 18 |
+
+Examples: `8.4-node20`, `8.3-node18`
 
 ## Usage
+
+```bash
+docker pull tavib47/php-ci:8.4
+docker run -v $(pwd):/app -w /app tavib47/php-ci:8.4 composer install
+```
 
 ### GitLab CI
 
 ```yaml
 image: tavib47/php-ci:8.4
 
+stages:
+  - build
+  - test
+
 build:
+  stage: build
   script:
     - composer install
     - npm install
     - npm run build
+
+test:
+  stage: test
+  script:
+    - ./vendor/bin/phpunit
 ```
 
 ### GitHub Actions
@@ -47,10 +67,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: composer install
-      - run: npm install
+      - run: npm install && npm run build
+      - run: ./vendor/bin/phpunit
 ```
 
-### Multi-version Testing
+### Multi-Version Testing
 
 ```yaml
 # GitLab CI
@@ -67,57 +88,16 @@ test:php8.4:
   extends: .test
   image: tavib47/php-ci:8.4
 
-test:node18:
-  extends: .test
-  image: tavib47/php-ci:8.4-node18
-
 test:node20:
   extends: .test
   image: tavib47/php-ci:8.4-node20
 ```
 
-## Choosing a Node.js Version
+## Related Images
 
-Node.js version is selected at build time via image tags:
+- [tavib47/drupal-ci](https://hub.docker.com/r/tavib47/drupal-ci) — Extends this image with Drupal-specific tools (Drush, Robo) and PHP extensions
+- [tavib47/php-fpm](https://hub.docker.com/r/tavib47/php-fpm) — Production PHP-FPM image
 
-```yaml
-# Use default Node.js (22)
-image: tavib47/php-ci:8.4
+## Source
 
-# Use Node.js 20
-image: tavib47/php-ci:8.4-node20
-
-# Use Node.js 18
-image: tavib47/php-ci:8.4-node18
-```
-
-## Building Locally
-
-```bash
-# Using build script (default Node.js 22)
-./build.sh -v 8.4 -i php-ci
-
-# With specific Node.js version
-./build.sh -v 8.4 -n 20 -i php-ci
-
-# Build all Node.js versions for PHP 8.4
-./build.sh -v 8.4 -N -i php-ci
-
-# Or manually
-docker build \
-  --build-arg PHP_VERSION=8.4 \
-  --build-arg NODE_VERSION=20 \
-  -t tavib47/php-ci:8.4-node20 \
-  ./php-ci
-```
-
-## Build Arguments
-
-| ARG | Default | Description |
-|-----|---------|-------------|
-| `PHP_VERSION` | 8.4 | PHP version (8.1, 8.2, 8.3, 8.4, 8.5) |
-| `NODE_VERSION` | 22 | Node.js version (18, 20, 22) |
-
-## Base Image
-
-Built on `php:<version>-fpm-alpine` with Node.js copied from `node:<version>-alpine` via multi-stage build.
+[GitHub Repository](https://github.com/tavib47/docker)
