@@ -2,18 +2,25 @@
 
 [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-php--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/php-ci)
 
-Base PHP image for CI/CD pipelines with Composer, Git, and NVM/Node.js.
+Alpine-based PHP image for CI/CD pipelines with Composer, Git, and Node.js.
 
 ## Tags
 
-- `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest`
+### PHP + Node.js (default)
+- `8.1`, `8.2`, `8.3`, `8.4`, `8.5`, `latest` — with Node.js 22
+
+### PHP + Specific Node.js Version
+- `8.4-node18`, `8.4-node20` — PHP 8.4 with Node.js 18/20
+- `8.3-node18`, `8.3-node20` — PHP 8.3 with Node.js 18/20
+- *(same pattern for other PHP versions)*
 
 ## What's Included
 
 - PHP (with zip extension)
 - Composer (latest)
 - Git
-- NVM with Node.js 20 (default)
+- Node.js (18, 20, or 22 depending on tag)
+- npm and npx
 
 ## Usage
 
@@ -52,37 +59,65 @@ jobs:
     - composer install
     - ./vendor/bin/phpunit
 
-test:8.3:
+test:php8.3:
   extends: .test
   image: tavib47/php-ci:8.3
 
-test:8.4:
+test:php8.4:
   extends: .test
   image: tavib47/php-ci:8.4
+
+test:node18:
+  extends: .test
+  image: tavib47/php-ci:8.4-node18
+
+test:node20:
+  extends: .test
+  image: tavib47/php-ci:8.4-node20
 ```
 
-## Customizing Node.js Version
+## Choosing a Node.js Version
 
-Images use NVM, allowing runtime version switching:
+Node.js version is selected at build time via image tags:
 
-```bash
-source $NVM_DIR/nvm.sh
-nvm install 18
-nvm use 18
+```yaml
+# Use default Node.js (22)
+image: tavib47/php-ci:8.4
+
+# Use Node.js 20
+image: tavib47/php-ci:8.4-node20
+
+# Use Node.js 18
+image: tavib47/php-ci:8.4-node18
 ```
 
 ## Building Locally
 
 ```bash
-# Using build script
+# Using build script (default Node.js 22)
 ./build.sh -v 8.4 -i php-ci
 
+# With specific Node.js version
+./build.sh -v 8.4 -n 20 -i php-ci
+
+# Build all Node.js versions for PHP 8.4
+./build.sh -v 8.4 -N -i php-ci
+
 # Or manually
-docker build --build-arg PHP_VERSION=8.4 -t tavib47/php-ci:8.4 ./php-ci
+docker build \
+  --build-arg PHP_VERSION=8.4 \
+  --build-arg NODE_VERSION=20 \
+  -t tavib47/php-ci:8.4-node20 \
+  ./php-ci
 ```
 
 ## Build Arguments
 
 | ARG | Default | Description |
 |-----|---------|-------------|
-| `PHP_VERSION` | 8.3 | PHP version to use |
+| `PHP_VERSION` | 8.4 | PHP version (8.1, 8.2, 8.3, 8.4, 8.5) |
+| `NODE_VERSION` | 22 | Node.js version (18, 20, 22) |
+
+## Base Image
+
+Built on `php:<version>-fpm-alpine` with Node.js copied from `node:<version>-alpine` via multi-stage build.
