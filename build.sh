@@ -4,8 +4,10 @@ set -e
 
 # Default values
 DEFAULT_PHP_VERSION="8.4"
-SUPPORTED_VERSIONS=("8.1" "8.2" "8.3" "8.4" "8.5")
-LATEST_VERSION="8.5"
+DEFAULT_NODE_VERSION="22"
+SUPPORTED_PHP_VERSIONS=("8.1" "8.2" "8.3" "8.4" "8.5")
+SUPPORTED_NODE_VERSIONS=("18" "20" "22")
+LATEST_PHP_VERSION="8.5"
 IMAGE_PREFIX="tavib47"
 
 # Colors for output
@@ -21,42 +23,78 @@ usage() {
     echo "Build Docker images for PHP/Drupal CI pipelines and production."
     echo ""
     echo "Options:"
-    echo "  -v, --version VERSION   Build for specific PHP version (${SUPPORTED_VERSIONS[*]})"
+    echo "  -v, --version VERSION   Build for specific PHP version (${SUPPORTED_PHP_VERSIONS[*]})"
+    echo "  -n, --node VERSION      Build with specific Node.js version (${SUPPORTED_NODE_VERSIONS[*]})"
+    echo "                          Only applies to php-ci and drupal-ci images"
     echo "  -a, --all               Build for all supported PHP versions"
+    echo "  -N, --all-node          Build for all supported Node.js versions"
     echo "  -i, --image IMAGE       Build only specific image (php-ci, drupal-ci, or php-fpm)"
     echo "  -p, --push              Push images to Docker Hub after building"
     echo "  -h, --help              Show this help message"
     echo ""
+    echo "Tag conventions:"
+    echo "  - Without -n: tavib47/<image>:<php-version> (uses Node $DEFAULT_NODE_VERSION)"
+    echo "  - With -n:    tavib47/<image>:<php-version>-node<node-version>"
+    echo ""
     echo "Examples:"
-    echo "  $0                      Build all images for PHP $DEFAULT_PHP_VERSION"
+    echo "  $0                      Build all images for PHP $DEFAULT_PHP_VERSION (Node $DEFAULT_NODE_VERSION)"
     echo "  $0 -v 8.2               Build all images for PHP 8.2"
+    echo "  $0 -v 8.4 -n 20         Build php-ci/drupal-ci with PHP 8.4 and Node 20"
     echo "  $0 -a                   Build all images for all PHP versions"
+    echo "  $0 -v 8.4 -N            Build PHP 8.4 with all Node versions"
+    echo "  $0 -a -N                Build full matrix (all PHP × all Node versions)"
     echo "  $0 -v 8.4 -i php-ci     Build only php-ci for PHP 8.4"
     echo "  $0 -a --push            Build all versions and push to Docker Hub"
 }
 
+get_tag() {
+    local image=$1
+    local php_version=$2
+    local node_version=$3
+
+    if [[ "$image" == "php-fpm" ]]; then
+        # php-fpm doesn't use Node.js
+        echo "${IMAGE_PREFIX}/${image}:${php_version}"
+    elif [[ -n "$node_version" && "$node_version" != "$DEFAULT_NODE_VERSION" ]]; then
+        # Custom Node version specified
+        echo "${IMAGE_PREFIX}/${image}:${php_version}-node${node_version}"
+    else
+        # Default Node version (no suffix)
+        echo "${IMAGE_PREFIX}/${image}:${php_version}"
+    fi
+}
+
 build_image() {
     local image=$1
-    local version=$2
-    local tag="${IMAGE_PREFIX}/${image}:${version}"
+    local php_version=$2
+    local node_version=$3
+    local tag=$(get_tag "$image" "$php_version" "$node_version")
 
     echo -e "${YELLOW}Building ${tag}...${NC}"
 
     if [[ "$image" == "drupal-ci" ]]; then
+        local php_ci_tag=$(get_tag "php-ci" "$php_version" "$node_version")
         docker build \
-            --build-arg PHP_VERSION="$version" \
-            --build-arg PHP_CI_IMAGE="${IMAGE_PREFIX}/php-ci:${version}" \
+            --build-arg PHP_VERSION="$php_version" \
+            --build-arg PHP_CI_IMAGE="${php_ci_tag}" \
+            -t "$tag" \
+            "./${image}"
+    elif [[ "$image" == "php-ci" ]]; then
+        docker build \
+            --build-arg PHP_VERSION="$php_version" \
+            --build-arg NODE_VERSION="${node_version:-$DEFAULT_NODE_VERSION}" \
             -t "$tag" \
             "./${image}"
     else
+        # php-fpm (no Node.js)
         docker build \
-            --build-arg PHP_VERSION="$version" \
+            --build-arg PHP_VERSION="$php_version" \
             -t "$tag" \
             "./${image}"
     fi
 
-    # Tag as latest if this is the latest PHP version
-    if [[ "$version" == "$LATEST_VERSION" ]]; then
+    # Tag as latest if this is the latest PHP version and default Node version
+    if [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local latest_tag="${IMAGE_PREFIX}/${image}:latest"
         echo -e "${YELLOW}Tagging ${tag} as ${latest_tag}${NC}"
         docker tag "$tag" "$latest_tag"
@@ -90,14 +128,15 @@ check_docker_login() {
 
 push_image() {
     local image=$1
-    local version=$2
-    local tag="${IMAGE_PREFIX}/${image}:${version}"
+    local php_version=$2
+    local node_version=$3
+    local tag=$(get_tag "$image" "$php_version" "$node_version")
 
     echo -e "${BLUE}Pushing ${tag}...${NC}"
     docker push "$tag"
 
-    # Push latest tag if this is the latest PHP version
-    if [[ "$version" == "$LATEST_VERSION" ]]; then
+    # Push latest tag if this is the latest PHP version and default Node version
+    if [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local latest_tag="${IMAGE_PREFIX}/${image}:latest"
         echo -e "${BLUE}Pushing ${latest_tag}...${NC}"
         docker push "$latest_tag"
@@ -107,31 +146,34 @@ push_image() {
 }
 
 build_for_version() {
-    local version=$1
-    local image=$2
-    local do_push=$3
+    local php_version=$1
+    local node_version=$2
+    local image=$3
+    local do_push=$4
 
-    echo -e "${GREEN}=== Building for PHP ${version} ===${NC}"
+    echo -e "${GREEN}=== Building for PHP ${php_version}${node_version:+ with Node ${node_version}} ===${NC}"
 
     if [[ -z "$image" || "$image" == "php-ci" ]]; then
-        build_image "php-ci" "$version"
-        [[ "$do_push" == true ]] && push_image "php-ci" "$version"
+        build_image "php-ci" "$php_version" "$node_version"
+        [[ "$do_push" == true ]] && push_image "php-ci" "$php_version" "$node_version"
     fi
 
     if [[ -z "$image" || "$image" == "drupal-ci" ]]; then
-        build_image "drupal-ci" "$version"
-        [[ "$do_push" == true ]] && push_image "drupal-ci" "$version"
+        build_image "drupal-ci" "$php_version" "$node_version"
+        [[ "$do_push" == true ]] && push_image "drupal-ci" "$php_version" "$node_version"
     fi
 
     if [[ -z "$image" || "$image" == "php-fpm" ]]; then
-        build_image "php-fpm" "$version"
-        [[ "$do_push" == true ]] && push_image "php-fpm" "$version"
+        build_image "php-fpm" "$php_version" ""
+        [[ "$do_push" == true ]] && push_image "php-fpm" "$php_version" ""
     fi
 }
 
 # Parse arguments
 PHP_VERSION=""
-BUILD_ALL=false
+NODE_VERSION=""
+BUILD_ALL_PHP=false
+BUILD_ALL_NODE=false
 TARGET_IMAGE=""
 DO_PUSH=false
 
@@ -141,8 +183,16 @@ while [[ $# -gt 0 ]]; do
             PHP_VERSION="$2"
             shift 2
             ;;
+        -n|--node)
+            NODE_VERSION="$2"
+            shift 2
+            ;;
         -a|--all)
-            BUILD_ALL=true
+            BUILD_ALL_PHP=true
+            shift
+            ;;
+        -N|--all-node)
+            BUILD_ALL_NODE=true
             shift
             ;;
         -i|--image)
@@ -175,7 +225,7 @@ fi
 # Validate PHP version if specified
 if [[ -n "$PHP_VERSION" ]]; then
     valid=false
-    for v in "${SUPPORTED_VERSIONS[@]}"; do
+    for v in "${SUPPORTED_PHP_VERSIONS[@]}"; do
         if [[ "$v" == "$PHP_VERSION" ]]; then
             valid=true
             break
@@ -183,9 +233,41 @@ if [[ -n "$PHP_VERSION" ]]; then
     done
     if [[ "$valid" == false ]]; then
         echo -e "${RED}Invalid PHP version: $PHP_VERSION${NC}"
-        echo "Supported versions: ${SUPPORTED_VERSIONS[*]}"
+        echo "Supported versions: ${SUPPORTED_PHP_VERSIONS[*]}"
         exit 1
     fi
+fi
+
+# Validate Node version if specified
+if [[ -n "$NODE_VERSION" ]]; then
+    if [[ "$BUILD_ALL_NODE" == true ]]; then
+        echo -e "${RED}Cannot use both -n and -N together${NC}"
+        exit 1
+    fi
+
+    valid=false
+    for v in "${SUPPORTED_NODE_VERSIONS[@]}"; do
+        if [[ "$v" == "$NODE_VERSION" ]]; then
+            valid=true
+            break
+        fi
+    done
+    if [[ "$valid" == false ]]; then
+        echo -e "${RED}Invalid Node.js version: $NODE_VERSION${NC}"
+        echo "Supported versions: ${SUPPORTED_NODE_VERSIONS[*]}"
+        exit 1
+    fi
+
+    # Warn if Node version specified for php-fpm only
+    if [[ "$TARGET_IMAGE" == "php-fpm" ]]; then
+        echo -e "${YELLOW}Warning: Node.js version is ignored for php-fpm (no Node.js in that image)${NC}"
+    fi
+fi
+
+# Warn if --all-node specified for php-fpm only
+if [[ "$BUILD_ALL_NODE" == true && "$TARGET_IMAGE" == "php-fpm" ]]; then
+    echo -e "${YELLOW}Warning: --all-node is ignored for php-fpm (no Node.js in that image)${NC}"
+    BUILD_ALL_NODE=false
 fi
 
 # Check Docker login if pushing
@@ -194,13 +276,31 @@ if [[ "$DO_PUSH" == true ]]; then
 fi
 
 # Build images
-if [[ "$BUILD_ALL" == true ]]; then
-    for version in "${SUPPORTED_VERSIONS[@]}"; do
-        build_for_version "$version" "$TARGET_IMAGE" "$DO_PUSH"
-    done
+if [[ "$BUILD_ALL_PHP" == true ]]; then
+    if [[ "$BUILD_ALL_NODE" == true ]]; then
+        # Full matrix: all PHP × all Node versions
+        for php_version in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+            for node_version in "${SUPPORTED_NODE_VERSIONS[@]}"; do
+                build_for_version "$php_version" "$node_version" "$TARGET_IMAGE" "$DO_PUSH"
+            done
+        done
+    else
+        # All PHP versions, single Node version
+        for php_version in "${SUPPORTED_PHP_VERSIONS[@]}"; do
+            build_for_version "$php_version" "$NODE_VERSION" "$TARGET_IMAGE" "$DO_PUSH"
+        done
+    fi
 else
-    version="${PHP_VERSION:-$DEFAULT_PHP_VERSION}"
-    build_for_version "$version" "$TARGET_IMAGE" "$DO_PUSH"
+    php_version="${PHP_VERSION:-$DEFAULT_PHP_VERSION}"
+    if [[ "$BUILD_ALL_NODE" == true ]]; then
+        # Single PHP version, all Node versions
+        for node_version in "${SUPPORTED_NODE_VERSIONS[@]}"; do
+            build_for_version "$php_version" "$node_version" "$TARGET_IMAGE" "$DO_PUSH"
+        done
+    else
+        # Single PHP version, single Node version
+        build_for_version "$php_version" "$NODE_VERSION" "$TARGET_IMAGE" "$DO_PUSH"
+    fi
 fi
 
 if [[ "$DO_PUSH" == true ]]; then
