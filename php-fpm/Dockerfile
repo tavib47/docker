@@ -38,9 +38,14 @@ RUN docker-php-ext-install \
     intl \
     exif
 
-# Install PECL extensions
-RUN pecl install apcu redis \
-    && docker-php-ext-enable apcu redis
+# Install PECL extensions (requires build tools)
+RUN apk add --no-cache --virtual .build-deps \
+    autoconf \
+    g++ \
+    make \
+    && pecl install apcu redis \
+    && docker-php-ext-enable apcu redis \
+    && apk del .build-deps
 
 # Use production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
