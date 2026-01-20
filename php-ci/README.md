@@ -22,10 +22,12 @@ A lightweight Alpine-based PHP image optimized for CI/CD pipelines, bundling PHP
 | `8.3` | 8.3 | 22 |
 | `8.2` | 8.2 | 22 |
 | `8.1` | 8.1 | 22 |
+| `<php>-node24` | 8.1-8.5 | 24 |
+| `<php>-node22` | 8.1-8.5 | 22 |
 | `<php>-node20` | 8.1-8.5 | 20 |
 | `<php>-node18` | 8.1-8.5 | 18 |
 
-Examples: `8.4-node20`, `8.3-node18`
+Examples: `8.4-node24`, `8.4-node20`, `8.3-node18`
 
 ## Usage
 

@@ -32,7 +32,7 @@ This repository contains Alpine-based Docker images for PHP/Drupal CI pipelines 
 - Latest tag: 8.5
 
 ### Node.js Versions (php-ci and drupal-ci only)
-- Supported: 18, 20, 22
+- Supported: 18, 20, 22, 24
 - Default: 22
 - Node.js is copied from official `node:alpine` image via multi-stage build
 
