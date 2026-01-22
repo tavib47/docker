@@ -19,18 +19,6 @@ A collection of Alpine-based Docker images for CI/CD pipelines and production.
 | [drupal-php](./drupal-php) | Base PHP-FPM image for Drupal with drupal user configured | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-drupal--php-blue?logo=docker)](https://hub.docker.com/r/tavib47/drupal-php) |
 | [drupal-nginx](./drupal-nginx) | Base Nginx image for Drupal with drupal user and Drupal-optimized config | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-drupal--nginx-blue?logo=docker)](https://hub.docker.com/r/tavib47/drupal-nginx) |
 
-## Tag Conventions
-
-| Tag | Description |
-|-----|-------------|
-| `tavib47/php-ci:8.4` | PHP 8.4 with Node.js 22 (default) |
-| `tavib47/php-ci:8.4-node20` | PHP 8.4 with Node.js 20 |
-| `tavib47/php-ci:8.4-node18` | PHP 8.4 with Node.js 18 |
-| `tavib47/php-ci:latest` | Latest PHP (8.5) with Node.js 22 |
-| `tavib47/php-fpm:8.4` | PHP 8.4 (no Node.js) |
-| `tavib47/drupal-php:8.4` | PHP 8.4 with drupal user configured |
-| `tavib47/drupal-nginx:latest` | Nginx with Drupal config and drupal user |
-
 ## Building Locally
 
 Use the included build script:
