@@ -19,12 +19,6 @@ A collection of Alpine-based Docker images for CI/CD pipelines and production.
 | [drupal-php](./drupal-php) | Base PHP-FPM image for Drupal with drupal user configured | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-drupal--php-blue?logo=docker)](https://hub.docker.com/r/tavib47/drupal-php) |
 | [drupal-nginx](./drupal-nginx) | Base Nginx image for Drupal with drupal user and Drupal-optimized config | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-drupal--nginx-blue?logo=docker)](https://hub.docker.com/r/tavib47/drupal-nginx) |
 
-## Version Support
-
-**PHP versions:** `8.1`, `8.2`, `8.3`, `8.4`, `8.5 (latest)`
-
-**Node.js versions:** `18`, `20`, `22 (default)` — applies to php-ci and drupal-ci only
-
 ## Tag Conventions
 
 | Tag | Description |
