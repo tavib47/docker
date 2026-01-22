@@ -11,6 +11,9 @@ LABEL maintainer="tavib47"
 LABEL description="Base PHP-FPM image for Drupal with drupal user configured"
 LABEL php.version="${PHP_VERSION}"
 
+# Install mysql client for drush sql:dump
+RUN apk add --no-cache mysql-client
+
 # Create drupal user and group with configurable UID/GID
 RUN addgroup -g ${DRUPAL_GID} drupal && \
     adduser -u ${DRUPAL_UID} -G drupal -D -H drupal
