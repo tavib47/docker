@@ -45,7 +45,8 @@ server {
         access_log off;
     }
 
-    location = /${ROBOTS_FILE} {
+    location = /robots.txt {
+        alias /var/www/html/web/${ROBOTS_FILE};
         allow all;
         log_not_found off;
         access_log off;
