@@ -51,8 +51,8 @@ ENV ROBOTS_FILE=robots.txt
 
 | ARG | Default | Description |
 |-----|---------|-------------|
-| `DRUPAL_UID` | 1000 | UID for the drupal user |
-| `DRUPAL_GID` | 1000 | GID for the drupal group |
+| `DRUPAL_UID` | 41821 | UID for the drupal user |
+| `DRUPAL_GID` | 41821 | GID for the drupal group |
 
 ## Docker Compose Example
 
@@ -70,8 +70,8 @@ services:
       context: .
       dockerfile: docker/nginx/Dockerfile
       args:
-        - DRUPAL_UID=${DRUPAL_UID:-1000}
-        - DRUPAL_GID=${DRUPAL_GID:-1000}
+        - DRUPAL_UID=${DRUPAL_UID:-41821}
+        - DRUPAL_GID=${DRUPAL_GID:-41821}
     ports:
       - "80:80"
     volumes:

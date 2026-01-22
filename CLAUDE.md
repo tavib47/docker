@@ -132,14 +132,14 @@ The `.gitlab-ci.yml` handles builds with manual triggers (to conserve CI minutes
 | ARG | Default | Description |
 |-----|---------|-------------|
 | `PHP_VERSION` | 8.4 | PHP version to use |
-| `DRUPAL_UID` | 1000 | UID for drupal user |
-| `DRUPAL_GID` | 1000 | GID for drupal group |
+| `DRUPAL_UID` | 41821 | UID for drupal user |
+| `DRUPAL_GID` | 41821 | GID for drupal group |
 
 ### drupal-nginx
 | ARG | Default | Description |
 |-----|---------|-------------|
-| `DRUPAL_UID` | 1000 | UID for drupal user |
-| `DRUPAL_GID` | 1000 | GID for drupal group |
+| `DRUPAL_UID` | 41821 | UID for drupal user |
+| `DRUPAL_GID` | 41821 | GID for drupal group |
 
 ### drupal-nginx Environment Variables
 | ENV | Default | Description |

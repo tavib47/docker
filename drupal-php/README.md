@@ -59,8 +59,8 @@ $settings['file_temp_path'] = '/var/www/html/tmp';
 | ARG | Default | Description |
 |-----|---------|-------------|
 | `PHP_VERSION` | 8.4 | PHP version to use |
-| `DRUPAL_UID` | 1000 | UID for the drupal user |
-| `DRUPAL_GID` | 1000 | GID for the drupal group |
+| `DRUPAL_UID` | 41821 | UID for the drupal user |
+| `DRUPAL_GID` | 41821 | GID for the drupal group |
 
 ### Custom UID/GID
 
@@ -82,8 +82,8 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       args:
-        - DRUPAL_UID=${DRUPAL_UID:-1000}
-        - DRUPAL_GID=${DRUPAL_GID:-1000}
+        - DRUPAL_UID=${DRUPAL_UID:-41821}
+        - DRUPAL_GID=${DRUPAL_GID:-41821}
     volumes:
       - .:/var/www/html
     expose:
