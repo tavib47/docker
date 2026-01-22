@@ -28,7 +28,7 @@ usage() {
     echo "                          Only applies to php-ci and drupal-ci images"
     echo "  -a, --all               Build for all supported PHP versions"
     echo "  -N, --all-node          Build for all supported Node.js versions"
-    echo "  -i, --image IMAGE       Build only specific image (php-ci, drupal-ci, or php-fpm)"
+    echo "  -i, --image IMAGE       Build only specific image (php-ci, drupal-ci, php-fpm, drupal-php, drupal-nginx)"
     echo "  -p, --push              Push images to Docker Hub after building"
     echo "  -h, --help              Show this help message"
     echo ""
@@ -52,9 +52,12 @@ get_tag() {
     local php_version=$2
     local node_version=$3
 
-    if [[ "$image" == "php-fpm" ]]; then
-        # php-fpm doesn't use Node.js
+    if [[ "$image" == "php-fpm" || "$image" == "drupal-php" ]]; then
+        # php-fpm and drupal-php don't use Node.js
         echo "${IMAGE_PREFIX}/${image}:${php_version}"
+    elif [[ "$image" == "drupal-nginx" ]]; then
+        # drupal-nginx doesn't use PHP or Node.js versions
+        echo "${IMAGE_PREFIX}/${image}:latest"
     elif [[ -n "$node_version" && "$node_version" != "$DEFAULT_NODE_VERSION" ]]; then
         # Custom Node version specified
         echo "${IMAGE_PREFIX}/${image}:${php_version}-node${node_version}"
@@ -85,6 +88,17 @@ build_image() {
             --build-arg NODE_VERSION="${node_version:-$DEFAULT_NODE_VERSION}" \
             -t "$tag" \
             "./${image}"
+    elif [[ "$image" == "drupal-php" ]]; then
+        # drupal-php depends on php-fpm (no Node.js)
+        docker build \
+            --build-arg PHP_VERSION="$php_version" \
+            -t "$tag" \
+            "./${image}"
+    elif [[ "$image" == "drupal-nginx" ]]; then
+        # drupal-nginx is standalone (no PHP or Node.js)
+        docker build \
+            -t "$tag" \
+            "./${image}"
     else
         # php-fpm (no Node.js)
         docker build \
@@ -94,14 +108,17 @@ build_image() {
     fi
 
     # For default Node version, also tag with explicit node version (e.g., 8.4 and 8.4-node22)
-    if [[ "$image" != "php-fpm" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
+    if [[ "$image" != "php-fpm" && "$image" != "drupal-php" && "$image" != "drupal-nginx" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local explicit_node_tag="${IMAGE_PREFIX}/${image}:${php_version}-node${DEFAULT_NODE_VERSION}"
         echo -e "${YELLOW}Tagging ${tag} as ${explicit_node_tag}${NC}"
         docker tag "$tag" "$explicit_node_tag"
     fi
 
     # Tag as latest if this is the latest PHP version and default Node version
-    if [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
+    # drupal-nginx is always tagged as latest (no PHP version)
+    if [[ "$image" == "drupal-nginx" ]]; then
+        : # already tagged as latest
+    elif [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local latest_tag="${IMAGE_PREFIX}/${image}:latest"
         echo -e "${YELLOW}Tagging ${tag} as ${latest_tag}${NC}"
         docker tag "$tag" "$latest_tag"
@@ -143,14 +160,17 @@ push_image() {
     docker push "$tag"
 
     # Push explicit node tag for default Node version (e.g., 8.4-node22)
-    if [[ "$image" != "php-fpm" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
+    if [[ "$image" != "php-fpm" && "$image" != "drupal-php" && "$image" != "drupal-nginx" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local explicit_node_tag="${IMAGE_PREFIX}/${image}:${php_version}-node${DEFAULT_NODE_VERSION}"
         echo -e "${BLUE}Pushing ${explicit_node_tag}...${NC}"
         docker push "$explicit_node_tag"
     fi
 
     # Push latest tag if this is the latest PHP version and default Node version
-    if [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
+    # drupal-nginx is always tagged as latest (no PHP version)
+    if [[ "$image" == "drupal-nginx" ]]; then
+        : # already pushed as latest
+    elif [[ "$php_version" == "$LATEST_PHP_VERSION" && ( -z "$node_version" || "$node_version" == "$DEFAULT_NODE_VERSION" ) ]]; then
         local latest_tag="${IMAGE_PREFIX}/${image}:latest"
         echo -e "${BLUE}Pushing ${latest_tag}...${NC}"
         docker push "$latest_tag"
@@ -180,6 +200,17 @@ build_for_version() {
     if [[ -z "$image" || "$image" == "php-fpm" ]]; then
         build_image "php-fpm" "$php_version" ""
         [[ "$do_push" == true ]] && push_image "php-fpm" "$php_version" ""
+    fi
+
+    if [[ -z "$image" || "$image" == "drupal-php" ]]; then
+        build_image "drupal-php" "$php_version" ""
+        [[ "$do_push" == true ]] && push_image "drupal-php" "$php_version" ""
+    fi
+
+    # drupal-nginx only needs to be built once (no PHP version)
+    if [[ "$image" == "drupal-nginx" ]]; then
+        build_image "drupal-nginx" "" ""
+        [[ "$do_push" == true ]] && push_image "drupal-nginx" "" ""
     fi
 }
 
@@ -230,9 +261,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate image name if specified
-if [[ -n "$TARGET_IMAGE" && "$TARGET_IMAGE" != "php-ci" && "$TARGET_IMAGE" != "drupal-ci" && "$TARGET_IMAGE" != "php-fpm" ]]; then
+if [[ -n "$TARGET_IMAGE" && "$TARGET_IMAGE" != "php-ci" && "$TARGET_IMAGE" != "drupal-ci" && "$TARGET_IMAGE" != "php-fpm" && "$TARGET_IMAGE" != "drupal-php" && "$TARGET_IMAGE" != "drupal-nginx" ]]; then
     echo -e "${RED}Invalid image name: $TARGET_IMAGE${NC}"
-    echo "Valid images: php-ci, drupal-ci, php-fpm"
+    echo "Valid images: php-ci, drupal-ci, php-fpm, drupal-php, drupal-nginx"
     exit 1
 fi
 
@@ -272,15 +303,15 @@ if [[ -n "$NODE_VERSION" ]]; then
         exit 1
     fi
 
-    # Warn if Node version specified for php-fpm only
-    if [[ "$TARGET_IMAGE" == "php-fpm" ]]; then
-        echo -e "${YELLOW}Warning: Node.js version is ignored for php-fpm (no Node.js in that image)${NC}"
+    # Warn if Node version specified for images without Node.js
+    if [[ "$TARGET_IMAGE" == "php-fpm" || "$TARGET_IMAGE" == "drupal-php" || "$TARGET_IMAGE" == "drupal-nginx" ]]; then
+        echo -e "${YELLOW}Warning: Node.js version is ignored for $TARGET_IMAGE (no Node.js in that image)${NC}"
     fi
 fi
 
-# Warn if --all-node specified for php-fpm only
-if [[ "$BUILD_ALL_NODE" == true && "$TARGET_IMAGE" == "php-fpm" ]]; then
-    echo -e "${YELLOW}Warning: --all-node is ignored for php-fpm (no Node.js in that image)${NC}"
+# Warn if --all-node specified for images without Node.js
+if [[ "$BUILD_ALL_NODE" == true && ( "$TARGET_IMAGE" == "php-fpm" || "$TARGET_IMAGE" == "drupal-php" || "$TARGET_IMAGE" == "drupal-nginx" ) ]]; then
+    echo -e "${YELLOW}Warning: --all-node is ignored for $TARGET_IMAGE (no Node.js in that image)${NC}"
     BUILD_ALL_NODE=false
 fi
 

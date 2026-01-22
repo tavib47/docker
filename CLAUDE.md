@@ -12,6 +12,12 @@ This repository contains Alpine-based Docker images for PHP/Drupal CI pipelines 
 │   └── Dockerfile
 ├── php-fpm/          # Production PHP-FPM image with common extensions
 │   └── Dockerfile
+├── drupal-php/       # Base PHP-FPM image for Drupal (extends php-fpm)
+│   └── Dockerfile
+├── drupal-nginx/     # Base Nginx image for Drupal
+│   ├── Dockerfile
+│   ├── nginx.conf
+│   └── default.conf.template
 ├── build.sh          # Build script (supports --push for Docker Hub)
 ├── .gitlab-ci.yml    # CI/CD pipeline configuration
 ├── README.md         # User documentation
@@ -20,9 +26,14 @@ This repository contains Alpine-based Docker images for PHP/Drupal CI pipelines 
 
 ## Image Hierarchy
 
+### CI/CD Images
 - `php-ci` is the base image containing PHP, Composer, Git, and Node.js
 - `drupal-ci` extends `php-ci` and adds Drupal-specific PHP extensions and tools (Robo, Drush)
+
+### Production Images
 - `php-fpm` is a standalone production image with PHP-FPM and common extensions (works with external web server)
+- `drupal-php` extends `php-fpm` and adds drupal user configuration (for production Drupal sites)
+- `drupal-nginx` is a standalone Nginx image with drupal user and Drupal-optimized configuration (pairs with drupal-php)
 
 ## Version Support
 
@@ -55,25 +66,38 @@ Use `build.sh` for local builds:
 ./build.sh -v 8.5 -i php-ci     # Build only php-ci for PHP 8.5
 ./build.sh -a --push            # Build all versions and push to Docker Hub
 ./build.sh -v 8.4 -i php-fpm -p # Build and push specific image/version
+./build.sh -i drupal-nginx     # Build drupal-nginx (no PHP version needed)
 ```
 
 The script handles build order automatically (php-ci before drupal-ci) and tags the highest version as `latest`. Use `--push` or `-p` to push images to Docker Hub after building (requires `docker login`).
 
 ## Build Order
 
-Always build `php-ci` first, then `drupal-ci`. When building for a specific PHP/Node version, use the same versions for both:
+Build dependencies:
+- `php-ci` → `drupal-ci` (CI images)
+- `php-fpm` → `drupal-php` (Production images)
+- `drupal-nginx` is standalone (no dependencies)
+
+When building for a specific PHP/Node version, use the same versions for dependent images:
 
 ```bash
-# Build for PHP 8.2 with Node 20
+# Build CI images for PHP 8.2 with Node 20
 docker build --build-arg PHP_VERSION=8.2 --build-arg NODE_VERSION=20 -t tavib47/php-ci:8.2-node20 ./php-ci
 docker build --build-arg PHP_VERSION=8.2 --build-arg PHP_CI_IMAGE=tavib47/php-ci:8.2-node20 -t tavib47/drupal-ci:8.2-node20 ./drupal-ci
+
+# Build production images for PHP 8.2
+docker build --build-arg PHP_VERSION=8.2 -t tavib47/php-fpm:8.2 ./php-fpm
+docker build --build-arg PHP_VERSION=8.2 -t tavib47/drupal-php:8.2 ./drupal-php
+
+# Build nginx (standalone)
+docker build -t tavib47/drupal-nginx:latest ./drupal-nginx
 ```
 
 ## GitLab CI/CD
 
 The `.gitlab-ci.yml` handles builds with manual triggers (to conserve CI minutes):
 - Builds all PHP versions defined in `PHP_VERSIONS` variable
-- Creates jobs on changes to `php-ci/`, `drupal-ci/`, or `php-fpm/` directories (manual start required)
+- Creates jobs on changes to `php-ci/`, `drupal-ci/`, `php-fpm/`, `drupal-php/`, or `drupal-nginx/` directories (manual start required)
 - Tags the highest version (sorted with `sort -V`) as `latest`
 - Requires `DOCKER_USERNAME` and `DOCKER_PASSWORD` CI variables
 
@@ -103,6 +127,26 @@ The `.gitlab-ci.yml` handles builds with manual triggers (to conserve CI minutes
 | ARG | Default | Description |
 |-----|---------|-------------|
 | `PHP_VERSION` | 8.4 | PHP version to use |
+
+### drupal-php
+| ARG | Default | Description |
+|-----|---------|-------------|
+| `PHP_VERSION` | 8.4 | PHP version to use |
+| `DRUPAL_UID` | 1000 | UID for drupal user |
+| `DRUPAL_GID` | 1000 | GID for drupal group |
+
+### drupal-nginx
+| ARG | Default | Description |
+|-----|---------|-------------|
+| `DRUPAL_UID` | 1000 | UID for drupal user |
+| `DRUPAL_GID` | 1000 | GID for drupal group |
+
+### drupal-nginx Environment Variables
+| ENV | Default | Description |
+|-----|---------|-------------|
+| `PHP_FPM_HOST` | php | PHP-FPM container hostname |
+| `PHP_FPM_PORT` | 9000 | PHP-FPM port |
+| `ROBOTS_FILE` | robots.txt | Robots file path |
 
 ## When Adding New Images
 
