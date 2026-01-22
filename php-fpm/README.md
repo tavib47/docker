@@ -9,6 +9,7 @@ An Alpine-based production PHP-FPM image with common extensions and built-in hea
 
 - PHP-FPM with production configuration
 - Built-in healthcheck via [php-fpm-healthcheck](https://github.com/renatomefi/php-fpm-healthcheck)
+- Tuned opcache settings for production/Drupal workloads
 - Common PHP extensions for web applications
 
 ### PHP Extensions
@@ -16,7 +17,8 @@ An Alpine-based production PHP-FPM image with common extensions and built-in hea
 | Extension | Description |
 |-----------|-------------|
 | `pdo_mysql`, `mysqli` | MySQL database |
-| `gd` | Image processing |
+| `pdo_pgsql` | PostgreSQL database |
+| `gd` | Image processing (with WebP support) |
 | `zip` | Archive handling |
 | `bcmath` | Arbitrary precision math |
 | `intl` | Internationalization |
@@ -111,9 +113,12 @@ docker exec <container> php-fpm-healthcheck
 ```dockerfile
 FROM tavib47/php-fpm:8.4
 
-# Install additional extensions
-RUN apk add --no-cache libpq-dev \
-    && docker-php-ext-install pgsql pdo_pgsql
+# Install additional extensions (example: imagick)
+RUN apk add --no-cache --virtual .build-deps autoconf g++ make imagemagick-dev \
+    && pecl install imagick \
+    && docker-php-ext-enable imagick \
+    && apk del .build-deps \
+    && apk add --no-cache imagemagick
 
 # Copy application code
 COPY . /var/www/html
@@ -122,6 +127,8 @@ RUN chown -R www-data:www-data /var/www/html
 
 ## Related Images
 
+- [tavib47/drupal-php](https://hub.docker.com/r/tavib47/drupal-php) — Extends this image with drupal user configured
+- [tavib47/drupal-nginx](https://hub.docker.com/r/tavib47/drupal-nginx) — Nginx image configured for Drupal
 - [tavib47/php-ci](https://hub.docker.com/r/tavib47/php-ci) — CI/CD image with Composer, Git, and Node.js
 - [tavib47/drupal-ci](https://hub.docker.com/r/tavib47/drupal-ci) — Drupal CI/CD image with Drush and Robo
 

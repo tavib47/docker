@@ -14,6 +14,7 @@ RUN apk add --no-cache \
     freetype-dev \
     libjpeg-turbo-dev \
     libpng-dev \
+    libwebp-dev \
     oniguruma-dev \
     libxml2-dev \
     curl-dev \
@@ -21,16 +22,18 @@ RUN apk add --no-cache \
     icu-dev \
     sqlite-dev \
     readline-dev \
+    postgresql-dev \
     fcgi \
     curl
 
-# Configure GD extension
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+# Configure GD extension with WebP support
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
 
 # Install PHP extensions
 # Note: curl, mbstring, opcache, pdo_sqlite, readline, sqlite3, xml are already in the base image
 RUN docker-php-ext-install \
     pdo_mysql \
+    pdo_pgsql \
     mysqli \
     gd \
     zip \
@@ -49,6 +52,14 @@ RUN apk add --no-cache --virtual .build-deps \
 
 # Use production PHP configuration
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
+# Opcache recommended settings for Drupal/production
+RUN { \
+    echo 'opcache.memory_consumption=128'; \
+    echo 'opcache.interned_strings_buffer=8'; \
+    echo 'opcache.max_accelerated_files=4000'; \
+    echo 'opcache.revalidate_freq=60'; \
+} > /usr/local/etc/php/conf.d/opcache-recommended.ini
 
 # Install php-fpm-healthcheck script
 RUN curl -fsSL https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/master/php-fpm-healthcheck \
