@@ -5,6 +5,40 @@ server {
     root /var/www/html/web;
     index index.php index.html;
 
+    # Hide nginx version
+    server_tokens off;
+
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+
+    # Limit upload/POST size
+    client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
+
+    # Real IP from reverse proxy (common private ranges)
+    set_real_ip_from 10.0.0.0/8;
+    set_real_ip_from 172.16.0.0/12;
+    set_real_ip_from 192.168.0.0/16;
+    set_real_ip_from 127.0.0.1;
+    real_ip_header X-Forwarded-For;
+    real_ip_recursive on;
+
+    # Performance: file serving
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_types text/plain text/css text/xml text/javascript application/javascript application/json application/xml application/rss+xml application/atom+xml image/svg+xml;
+
     # Drupal-specific configuration
     location = /favicon.ico {
         log_not_found off;
@@ -54,9 +88,23 @@ server {
         return 404;
     }
 
+    # Deny access to sensitive directories
+    location ~* /(vendor|node_modules)/ {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
     location ~* \.(engine|inc|install|make|module|profile|po|sh|.*sql|theme|twig|tpl(\.php)?|xtmpl|yml)(~|\.sw[op]|\.bak|\.orig|\.save)?$|^(\.(?!well-known).*|Entries.*|Repository|Root|Tag|Template|composer\.(json|lock)|web\.config)$|^#.*#$|\.php(~|\.sw[op]|\.bak|\.orig|\.save)$ {
         deny all;
         return 404;
+    }
+
+    # Deny access to backup/source/sensitive files
+    location ~* \.(bak|config|sql|fla|psd|ini|log|sh|inc|swp|dist|orig|old|env|yml|yaml)$ {
+        deny all;
+        access_log off;
+        log_not_found off;
     }
 
     location ~ '\.php$|^/update.php' {
@@ -66,14 +114,26 @@ server {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
         fastcgi_param PATH_INFO $fastcgi_path_info;
         fastcgi_param QUERY_STRING $query_string;
+        fastcgi_param REMOTE_ADDR $remote_addr;
         fastcgi_intercept_errors on;
         fastcgi_pass ${PHP_FPM_HOST}:${PHP_FPM_PORT};
+
+        # Timeouts
+        fastcgi_connect_timeout ${NGINX_FASTCGI_CONNECT_TIMEOUT};
+        fastcgi_send_timeout ${NGINX_FASTCGI_SEND_TIMEOUT};
+        fastcgi_read_timeout ${NGINX_FASTCGI_READ_TIMEOUT};
+
+        # Buffers
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 4 256k;
+        fastcgi_busy_buffers_size 256k;
     }
 
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webp|avif|mp4|webm|pdf)$ {
         try_files $uri @rewrite;
-        expires max;
-        log_not_found off;
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, immutable";
     }
 
     location ~ ^/sites/.*/files/styles/ {
@@ -82,5 +142,12 @@ server {
 
     location ~ ^(/[a-z\-]+)?/system/files/ {
         try_files $uri /index.php?$query_string;
+    }
+
+    # Health check endpoint
+    location = /health {
+        access_log off;
+        return 200 "OK\n";
+        add_header Content-Type text/plain;
     }
 }

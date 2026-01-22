@@ -10,8 +10,12 @@ A base Nginx image for Drupal production environments with Drupal-optimized conf
 - Nginx running as `drupal` user with configurable UID/GID
 - Drupal-optimized server configuration with security rules
 - Environment variable templating for PHP-FPM connection
+- Security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy)
 - Gzip compression enabled
-- Static asset caching headers
+- Static asset caching with `Cache-Control: public, immutable`
+- Real IP support for reverse proxy setups
+- Configurable FastCGI timeouts and buffer sizes
+- Health check endpoint at `/health`
 
 ## Supported Tags
 
@@ -46,6 +50,10 @@ ENV ROBOTS_FILE=robots.txt
 | `PHP_FPM_HOST` | `php` | PHP-FPM container hostname |
 | `PHP_FPM_PORT` | `9000` | PHP-FPM port |
 | `ROBOTS_FILE` | `robots.txt` | Robots file path (for multi-site setups) |
+| `NGINX_CLIENT_MAX_BODY_SIZE` | `50M` | Max upload/POST body size |
+| `NGINX_FASTCGI_CONNECT_TIMEOUT` | `60s` | FastCGI connect timeout |
+| `NGINX_FASTCGI_SEND_TIMEOUT` | `60s` | FastCGI send timeout |
+| `NGINX_FASTCGI_READ_TIMEOUT` | `300s` | FastCGI read timeout (increase for long-running requests) |
 
 ## Build Arguments
 
@@ -79,11 +87,25 @@ services:
     environment:
       - PHP_FPM_HOST=php
       - PHP_FPM_PORT=9000
+      - NGINX_CLIENT_MAX_BODY_SIZE=100M
+      - NGINX_FASTCGI_READ_TIMEOUT=600s
     depends_on:
       - php
 ```
 
-## Included Security Rules
+## Security Features
+
+### Security Headers
+
+The default configuration includes the following security headers:
+
+- `X-Frame-Options: SAMEORIGIN` — Prevents clickjacking
+- `X-Content-Type-Options: nosniff` — Prevents MIME type sniffing
+- `X-XSS-Protection: 1; mode=block` — XSS filter (legacy browsers)
+- `Referrer-Policy: strict-origin-when-cross-origin` — Controls referrer information
+- `Permissions-Policy` — Restricts browser features (geolocation, microphone, camera)
+
+### Access Rules
 
 The default configuration includes Drupal security best practices:
 
@@ -91,8 +113,30 @@ The default configuration includes Drupal security best practices:
 - Blocks PHP execution in `sites/*/files/`
 - Blocks access to `private/` directories
 - Blocks access to hidden files (except `.well-known/`)
-- Blocks access to `vendor/` PHP files
-- Blocks sensitive file extensions (`.engine`, `.inc`, `.install`, `.module`, etc.)
+- Blocks access to `vendor/` and `node_modules/` directories
+- Blocks sensitive file extensions (`.engine`, `.inc`, `.install`, `.module`, `.env`, `.yml`, `.yaml`, `.sql`, `.bak`, etc.)
+- Hides nginx version (`server_tokens off`)
+
+### Real IP Support
+
+Configured to extract real client IP from `X-Forwarded-For` header when behind a reverse proxy. Supports common private IP ranges:
+
+- `10.0.0.0/8`
+- `172.16.0.0/12`
+- `192.168.0.0/16`
+- `127.0.0.1`
+
+## Health Check
+
+A health check endpoint is available at `/health` that returns `200 OK`. Useful for container orchestration (Kubernetes, Docker Swarm, etc.):
+
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost/health"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+```
 
 ## Customizing Nginx Configuration
 
