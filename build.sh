@@ -5,7 +5,7 @@ set -e
 # Default values
 DEFAULT_PHP_VERSION="8.4"
 DEFAULT_NODE_VERSION="22"
-SUPPORTED_PHP_VERSIONS=("8.1" "8.2" "8.3" "8.4" "8.5")
+SUPPORTED_PHP_VERSIONS=("7.4" "8.1" "8.2" "8.3" "8.4" "8.5")
 SUPPORTED_NODE_VERSIONS=("18" "20" "22" "24")
 LATEST_PHP_VERSION="8.5"
 IMAGE_PREFIX="tavib47"
@@ -47,6 +47,29 @@ usage() {
     echo "  $0 -a --push            Build all versions and push to Docker Hub"
 }
 
+# PHP 7.x is built on Alpine 3.16 which only supports Node 18
+# Returns the compatible Node version for a given PHP version
+get_node_version_for_php() {
+    local php_version=$1
+    local node_version=$2
+    if [[ "$php_version" == 7.* ]]; then
+        echo "18"
+    else
+        echo "$node_version"
+    fi
+}
+
+# Returns the Node Docker image to use for a given PHP version
+get_node_image() {
+    local php_version=$1
+    local node_version=$2
+    if [[ "$php_version" == 7.* ]]; then
+        echo "node:18-alpine3.16"
+    else
+        echo "node:${node_version}-alpine"
+    fi
+}
+
 get_tag() {
     local image=$1
     local php_version=$2
@@ -83,9 +106,13 @@ build_image() {
             -t "$tag" \
             "./${image}"
     elif [[ "$image" == "php-ci" ]]; then
+        local effective_node="${node_version:-$DEFAULT_NODE_VERSION}"
+        local node_image=$(get_node_image "$php_version" "$effective_node")
+        effective_node=$(get_node_version_for_php "$php_version" "$effective_node")
         docker build \
             --build-arg PHP_VERSION="$php_version" \
-            --build-arg NODE_VERSION="${node_version:-$DEFAULT_NODE_VERSION}" \
+            --build-arg NODE_VERSION="$effective_node" \
+            --build-arg NODE_IMAGE="$node_image" \
             -t "$tag" \
             "./${image}"
     elif [[ "$image" == "drupal-php" ]]; then
@@ -112,6 +139,14 @@ build_image() {
         local explicit_node_tag="${IMAGE_PREFIX}/${image}:${php_version}-node${DEFAULT_NODE_VERSION}"
         echo -e "${YELLOW}Tagging ${tag} as ${explicit_node_tag}${NC}"
         docker tag "$tag" "$explicit_node_tag"
+    fi
+
+    # For PHP 7.x CI images, also create a simple <php-version> tag (e.g., 7.4)
+    # since Node 18 is the only supported version for these
+    if [[ "$image" != "php-fpm" && "$image" != "drupal-php" && "$image" != "drupal-nginx" && "$php_version" == 7.* ]]; then
+        local simple_tag="${IMAGE_PREFIX}/${image}:${php_version}"
+        echo -e "${YELLOW}Tagging ${tag} as ${simple_tag}${NC}"
+        docker tag "$tag" "$simple_tag"
     fi
 
     # Tag as latest if this is the latest PHP version and default Node version
@@ -166,6 +201,13 @@ push_image() {
         docker push "$explicit_node_tag"
     fi
 
+    # Push simple tag for PHP 7.x CI images (e.g., 7.4)
+    if [[ "$image" != "php-fpm" && "$image" != "drupal-php" && "$image" != "drupal-nginx" && "$php_version" == 7.* ]]; then
+        local simple_tag="${IMAGE_PREFIX}/${image}:${php_version}"
+        echo -e "${BLUE}Pushing ${simple_tag}...${NC}"
+        docker push "$simple_tag"
+    fi
+
     # Push latest tag if this is the latest PHP version and default Node version
     # drupal-nginx is always tagged as latest (no PHP version)
     if [[ "$image" == "drupal-nginx" ]]; then
@@ -184,6 +226,14 @@ build_for_version() {
     local node_version=$2
     local image=$3
     local do_push=$4
+
+    # PHP 7.x only supports Node 18 (Alpine 3.16 compatibility)
+    if [[ "$php_version" == 7.* ]]; then
+        if [[ -n "$node_version" && "$node_version" != "18" ]]; then
+            echo -e "${YELLOW}Warning: PHP ${php_version} only supports Node 18 (Alpine 3.16). Ignoring Node ${node_version}.${NC}"
+        fi
+        node_version="18"
+    fi
 
     echo -e "${GREEN}=== Building for PHP ${php_version}${node_version:+ with Node ${node_version}} ===${NC}"
 

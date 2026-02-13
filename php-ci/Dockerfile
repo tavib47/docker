@@ -1,6 +1,7 @@
 ARG PHP_VERSION=8.4
 ARG NODE_VERSION=22
-FROM node:${NODE_VERSION}-alpine AS node
+ARG NODE_IMAGE=node:${NODE_VERSION}-alpine
+FROM ${NODE_IMAGE} AS node
 FROM php:${PHP_VERSION}-fpm-alpine
 
 ARG PHP_VERSION
@@ -14,6 +15,7 @@ LABEL node.version="${NODE_VERSION}"
 WORKDIR /opt
 
 # Install base dependencies
+# libstdc++ and libgcc are needed for Node.js runtime
 RUN apk add --no-cache \
     curl \
     wget \
@@ -21,6 +23,7 @@ RUN apk add --no-cache \
     zip \
     unzip \
     libzip-dev \
+    libstdc++ \
     bash
 
 # Copy Node.js from official image
