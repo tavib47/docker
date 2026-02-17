@@ -89,6 +89,14 @@ server {
         return 404;
     }
 
+    # Allow Drupal core vendor assets (JS libraries like Modernizr, jQuery, etc.)
+    location ^~ /core/assets/vendor/ {
+        try_files $uri @rewrite;
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, immutable";
+    }
+
     # Deny access to sensitive directories
     location ~* /(vendor|node_modules)/ {
         deny all;
