@@ -10,6 +10,7 @@ A collection of Alpine-based Docker images for CI/CD pipelines and production.
 |-------|-------------|:-:|
 | [php-ci](./php-ci) | Base PHP image with Composer, Git, and Node.js | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-php--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/php-ci) |
 | [drupal-ci](./drupal-ci) | Drupal image extending php-ci with PHP extensions, Robo, and Drush | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-drupal--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/drupal-ci) |
+| [alpine-ci](./alpine-ci) | Lightweight Alpine image with SSH, curl, and jq for CI utility tasks | [![Docker Hub](https://img.shields.io/badge/Docker%20Hub-alpine--ci-blue?logo=docker)](https://hub.docker.com/r/tavib47/alpine-ci) |
 
 ### Production Images
 
@@ -58,7 +59,7 @@ Use the included build script:
 | `-n, --node` | Node.js version (18, 20, 22) |
 | `-a, --all` | Build all PHP versions |
 | `-N, --all-node` | Build all Node.js versions |
-| `-i, --image` | Build specific image (php-ci, drupal-ci, php-fpm, drupal-php, drupal-nginx) |
+| `-i, --image` | Build specific image (php-ci, drupal-ci, php-fpm, drupal-php, drupal-nginx, alpine-ci) |
 | `-p, --push` | Push to Docker Hub after building |
 | `-h, --help` | Show help |
 

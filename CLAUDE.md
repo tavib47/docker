@@ -14,6 +14,8 @@ This repository contains Alpine-based Docker images for PHP/Drupal CI pipelines 
 │   └── Dockerfile
 ├── drupal-php/       # Base PHP-FPM image for Drupal (extends php-fpm)
 │   └── Dockerfile
+├── alpine-ci/        # Lightweight Alpine image for CI utility tasks
+│   └── Dockerfile
 ├── drupal-nginx/     # Base Nginx image for Drupal
 │   ├── Dockerfile
 │   ├── nginx.conf
@@ -29,6 +31,9 @@ This repository contains Alpine-based Docker images for PHP/Drupal CI pipelines 
 ### CI/CD Images
 - `php-ci` is the base image containing PHP, Composer, Git, and Node.js
 - `drupal-ci` extends `php-ci` and adds Drupal-specific PHP extensions and tools (Robo, Drush)
+
+### Utility Images
+- `alpine-ci` is a lightweight Alpine image with openssh-client, curl, and jq for CI utility tasks (SSH setup, notifications, API calls)
 
 ### Production Images
 - `php-fpm` is a standalone production image with PHP-FPM and common extensions (works with external web server)
@@ -67,6 +72,7 @@ Use `build.sh` for local builds:
 ./build.sh -a --push            # Build all versions and push to Docker Hub
 ./build.sh -v 8.4 -i php-fpm -p # Build and push specific image/version
 ./build.sh -i drupal-nginx     # Build drupal-nginx (no PHP version needed)
+./build.sh -i alpine-ci        # Build alpine-ci (no PHP version needed)
 ```
 
 The script handles build order automatically (php-ci before drupal-ci) and tags the highest version as `latest`. Use `--push` or `-p` to push images to Docker Hub after building (requires `docker login`).
@@ -77,6 +83,7 @@ Build dependencies:
 - `php-ci` → `drupal-ci` (CI images)
 - `php-fpm` → `drupal-php` (Production images)
 - `drupal-nginx` is standalone (no dependencies)
+- `alpine-ci` is standalone (no dependencies)
 
 When building for a specific PHP/Node version, use the same versions for dependent images:
 
@@ -91,6 +98,9 @@ docker build --build-arg PHP_VERSION=8.2 -t tavib47/drupal-php:8.2 ./drupal-php
 
 # Build nginx (standalone)
 docker build -t tavib47/drupal-nginx:latest ./drupal-nginx
+
+# Build alpine-ci (standalone)
+docker build -t tavib47/alpine-ci:latest ./alpine-ci
 ```
 
 ## GitLab CI/CD
