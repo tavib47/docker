@@ -21,8 +21,12 @@ RUN apk add --no-cache \
     libxml2-dev \
     curl-dev
 
-# Configure GD extension with WebP and AVIF support
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif
+# Configure GD extension with WebP and AVIF support (AVIF requires PHP 8.1+)
+RUN GD_ARGS="--with-freetype --with-jpeg --with-webp" && \
+    if php -r 'exit(PHP_VERSION_ID >= 80100 ? 0 : 1);'; then \
+        GD_ARGS="$GD_ARGS --with-avif"; \
+    fi && \
+    docker-php-ext-configure gd $GD_ARGS
 
 # Install PHP extensions required by Drupal
 # Note: curl, mbstring, opcache, pdo, xml are already in the base image
