@@ -23,6 +23,8 @@ jobs:
             description: "Base PHP-FPM image for Drupal with drupal user configured"
           - image: drupal-nginx
             description: "Base Nginx image for Drupal with optimized configuration"
+          - image: alpine-ci
+            description: "Lightweight Alpine image with SSH, curl, and jq for CI utility tasks"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
