@@ -15,6 +15,7 @@ RUN apk add --no-cache \
     libjpeg-turbo-dev \
     libpng-dev \
     libwebp-dev \
+    libavif-dev \
     oniguruma-dev \
     libxml2-dev \
     curl-dev \
@@ -26,8 +27,8 @@ RUN apk add --no-cache \
     fcgi \
     curl
 
-# Configure GD extension with WebP support
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp
+# Configure GD extension with WebP and AVIF support
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif
 
 # Install PHP extensions
 # Note: curl, mbstring, opcache, pdo_sqlite, readline, sqlite3, xml are already in the base image

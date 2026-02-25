@@ -15,12 +15,14 @@ RUN apk add --no-cache \
     freetype-dev \
     libjpeg-turbo-dev \
     libpng-dev \
+    libwebp-dev \
+    libavif-dev \
     oniguruma-dev \
     libxml2-dev \
     curl-dev
 
-# Configure GD extension
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+# Configure GD extension with WebP and AVIF support
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp --with-avif
 
 # Install PHP extensions required by Drupal
 # Note: curl, mbstring, opcache, pdo, xml are already in the base image
