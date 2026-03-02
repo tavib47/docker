@@ -10,7 +10,7 @@ A base Nginx image for Drupal production environments with Drupal-optimized conf
 - Nginx running as `drupal` user with configurable UID/GID
 - Drupal-optimized server configuration with security rules
 - Environment variable templating for PHP-FPM connection
-- Security headers (X-Frame-Options, X-Content-Type-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy)
+- Security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Strict-Transport-Security)
 - Gzip compression enabled
 - Static asset caching with `Cache-Control: public, immutable`
 - Real IP support for reverse proxy setups
@@ -101,9 +101,8 @@ The default configuration includes the following security headers:
 
 - `X-Frame-Options: SAMEORIGIN` — Prevents clickjacking
 - `X-Content-Type-Options: nosniff` — Prevents MIME type sniffing
-- `X-XSS-Protection: 1; mode=block` — XSS filter (legacy browsers)
 - `Referrer-Policy: strict-origin-when-cross-origin` — Controls referrer information
-- `Permissions-Policy` — Restricts browser features (geolocation, microphone, camera)
+- `Strict-Transport-Security: max-age=31536000` — Enforces HTTPS (HSTS)
 
 ### Access Rules
 
