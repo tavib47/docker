@@ -9,11 +9,13 @@ server {
     server_tokens off;
 
     # Security headers
+    # NOTE: When a location block defines its own add_header, it overrides ALL
+    # server-level add_header directives. Any location using add_header must
+    # repeat these security headers.
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    add_header Permissions-Policy "geolocation=(), microphone=(), camera=()" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
     # Limit upload/POST size
     client_max_body_size ${NGINX_CLIENT_MAX_BODY_SIZE};
@@ -101,6 +103,10 @@ server {
         expires 1y;
         access_log off;
         add_header Cache-Control "public, immutable";
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     }
 
     # Deny access to sensitive directories
@@ -150,6 +156,10 @@ server {
         expires 1y;
         access_log off;
         add_header Cache-Control "public, immutable";
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
     }
 
     location ~ ^/sites/.*/files/styles/ {
@@ -163,7 +173,7 @@ server {
     # Health check endpoint
     location = /health {
         access_log off;
+        default_type text/plain;
         return 200 "OK\n";
-        add_header Content-Type text/plain;
     }
 }
