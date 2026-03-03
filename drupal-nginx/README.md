@@ -15,7 +15,6 @@ A base Nginx image for Drupal production environments with Drupal-optimized conf
 - Static asset caching with `Cache-Control: public, immutable`
 - Real IP support for reverse proxy setups
 - Configurable FastCGI timeouts and buffer sizes
-- Health check endpoint at `/health`
 
 ## Supported Tags
 
@@ -124,18 +123,6 @@ Configured to extract real client IP from `X-Forwarded-For` header when behind a
 - `172.16.0.0/12`
 - `192.168.0.0/16`
 - `127.0.0.1`
-
-## Health Check
-
-A health check endpoint is available at `/health` that returns `200 OK`. Useful for container orchestration (Kubernetes, Docker Swarm, etc.):
-
-```yaml
-healthcheck:
-  test: ["CMD", "curl", "-f", "http://localhost/health"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-```
 
 ## Customizing Nginx Configuration
 
